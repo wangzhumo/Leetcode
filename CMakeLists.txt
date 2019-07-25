@@ -17,6 +17,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 #include dir
 include_directories(include)
 
-set(SRC_LIST src/main.cpp)
+aux_source_directory(src SRC_LIST)
+#set(SRC_LIST .src/*)
 
 add_executable(Media ${SRC_LIST})

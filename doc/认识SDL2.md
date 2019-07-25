@@ -116,6 +116,12 @@ target_link_libraries(Media
 
 
 
+#### SDL_RenderPresent
+
+提送renderer到图形引擎,显示到显示器
+
+
+
 #### 销毁
 
 - SDL_DestroyWindow

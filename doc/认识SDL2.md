@@ -4,13 +4,13 @@
 
 #### 下载
 
-> http://www.libsdl.org/download-2.0.php
+http://www.libsdl.org/download-2.0.php
 
 
 
 #### 安装
 
-> http://wiki.libsdl.org/Installation#Mac_OS_X
+http://wiki.libsdl.org/Installation#Mac_OS_X
 
 - 解压缩到目录
 
@@ -53,4 +53,22 @@ sudo make -j 8 && make instal
   
 
 #### 完成Cmake
+
+##### 创建FindSDL2.cmake
+
+```
+cd {project}
+mkdir ./cmake
+cd ./cmake
+mkdir ./modules
+vim ./FindSDL2.cmake
+```
+
+内容过长,不重复了.`cmake/modules/FindSDL2.cmake`
+
+
+
+##### 编辑CMakeLists.text
+
+
 

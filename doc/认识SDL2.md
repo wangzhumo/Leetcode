@@ -87,3 +87,36 @@ target_link_libraries(Media
 
 
 
+## SDL的基本使用
+
+#### SDL_Init(SDL_INIT_VIDEO);
+
+初始化SDL
+
+#### SDL_CreateWindow 创建Windows
+
+ * @param Title, The title of the window, in UTF-8 encoding.
+ * @param x,     The x position of the window
+ * @param y,     The y position of the window
+ * @param w,     The width of the window, in screen coordinates.
+ * @param h,     The height of the window, in screen coordinates.
+ * @param flags, The flags for the window
+
+
+
+#### SDL_CreateRenderer  创建Render
+
+* @param window,  The window where rendering is displayed.
+
+* @param index    The index of the rendering driver to initialize, or -1 to 
+
+  initialize the first one supporting the requested flags.
+
+* @param flags    ::SDL_RendererFlags.
+
+
+
+#### 销毁
+
+- SDL_DestroyWindow
+- SDL_DestroyRenderer

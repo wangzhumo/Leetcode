@@ -6,16 +6,49 @@
 
 #define BLOCK_SIZE 4096000
 
-void read_audio_data(){
+static Uint8 *audio_buffer = NULL;
+static size_t audio_buff_len = 0;
+static Uint8 *audio_pos = NULL;
 
+/**
+ * 播放设备的回调,调取数据
+ * @param udata  [sdl_audioSpec.userdata]
+ * @param stream 音频设备的buffer
+ * @param length
+ */
+void read_audio_data(void *udata, Uint8 *stream, int length) {
+    if (audio_buff_len == 0) {
+        //读取完毕,直接返回
+        return;
+    }
+
+    //清空
+    SDL_memset(stream, 0, length);
+
+    //长度谁小用谁.
+    length = length < audio_buffer ? length : audio_buff_len;
+
+    //copy 拷贝数据到stream中,从audio_pos地址中,拷贝长度 length
+    //SDL_MIX_MAXVOLUME 音量.
+    SDL_MixAudio(stream, audio_pos, length, SDL_MIX_MAXVOLUME);
+
+    //拷贝完毕,则audio_pos应该移动 length 的位置.
+    audio_pos += length;
+
+    //可用的数据长度减少了.
+    audio_buff_len -= length;
 }
 
 
+/**
+ * 播放音频.
+ * @param audio_path
+ * @return int
+ */
 int play_pcm_audio(char *audio_path) {
 
     int result = -1;
     FILE *audio_file = NULL;
-    Uint8 *audio_buffer = NULL;
 
 
     //0.init SDL
@@ -50,7 +83,7 @@ int play_pcm_audio(char *audio_path) {
     sdl_audioSpec.userdata = NULL;
 
     //** open audio device
-    if (SDL_OpenAudio(&sdl_audioSpec, NULL)){
+    if (SDL_OpenAudio(&sdl_audioSpec, NULL)) {
         //0  成功
         printf("Failed to open audio device \n");
         goto __EXIT;
@@ -61,7 +94,16 @@ int play_pcm_audio(char *audio_path) {
     // 1 - 播放
     SDL_PauseAudio(0);
 
-
+    do {
+        //** read audio file  -> audio_buffer.
+        audio_buff_len = fread(audio_buffer, 1, BLOCK_SIZE, audio_file);
+        audio_pos = audio_buffer;
+        //audio_pos 指向了audio_buffer的头
+        //audio_buffer + audio_buff_len  = 整个buffer的尾部.
+        while (audio_pos < (audio_buffer + audio_buff_len)) {
+            SDL_Delay(1);
+        }
+    } while (audio_buff_len != 0);
 
 
     __EXIT:

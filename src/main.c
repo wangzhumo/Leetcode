@@ -6,6 +6,7 @@
 
 int main(int argc, char *args[]) {
 
+    yuv_player("/Users/wangzhumo/Develop/Media/out.yuv");
 
     return 0;
 }

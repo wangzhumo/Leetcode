@@ -10,4 +10,4 @@
 #include "SDL.h"
 #include <stdio.h>
 
-void yuv_player(char *file_name);
+int yuv_player(char *file_name);

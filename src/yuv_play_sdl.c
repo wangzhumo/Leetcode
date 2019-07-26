@@ -13,7 +13,7 @@ int thread_exit_flag = 0;
 /**
  * 定时刷新video数据 - 函数
  */
-void refresh_video_timer() {
+int refresh_video_timer(void *udata) {
     thread_exit_flag = 0;
 
     //while循环，刷新数据
@@ -31,6 +31,7 @@ void refresh_video_timer() {
     SDL_Event event;
     event.type = QUIT_EVENT;
     SDL_PushEvent(&event);
+    return 0;
 }
 
 
@@ -63,12 +64,12 @@ int yuv_player(char *file_path) {
     unsigned int video_buff_len = 0;
 
     //常量
-    const int video_width = 608;
-    const int video_height = 398;
+    const int video_width = 1920;
+    const int video_height = 1080;
 
     //定义大小
-    int windows_wight = 608;
-    int windows_height = 398;
+    int windows_wight = 1920;
+    int windows_height = 1080;
 
 
 
@@ -121,7 +122,7 @@ int yuv_player(char *file_path) {
     printf("Create SDL2 Texture. \n");
     //IYUV: Y + U + V  (3 planes)
     //YV12: Y + V + U  (3 planes)
-    pix_format = SDL_PIXELFORMAT_IYUV;
+    pix_format = SDL_PIXELFORMAT_NV21;
 
 
     sdl_texture = SDL_CreateTexture(
@@ -220,12 +221,16 @@ int yuv_player(char *file_path) {
             case SDL_WINDOWEVENT:
                 //Resize
                 printf("Event WindowSize. \n");
-                SDL_GetWindowSize(win, &windows_wight, &windows_height);
-                break
+                SDL_GetWindowSize(sdl_window, &windows_wight, &windows_height);
+                break;
             case SDL_QUIT:
-                printf("Quit WindowSize. \n");
+                printf("Quit. \n");
                 thread_exit_flag = 1;
                 break;
+            case QUIT_EVENT:
+                printf("Quit. \n");
+                thread_exit_flag = 1;
+                goto __FAIL;
             default:
                 break;
         }

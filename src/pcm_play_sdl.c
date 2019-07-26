@@ -54,7 +54,7 @@ int play_pcm_audio(char *audio_path) {
     //0.init SDL
     if (SDL_Init(SDL_INIT_AUDIO)) {
         printf("Failed to Init. \n");
-        return;
+        return result;
     }
 
 
@@ -75,7 +75,7 @@ int play_pcm_audio(char *audio_path) {
     //3.create audio device
     SDL_AudioSpec sdl_audioSpec;
     sdl_audioSpec.freq = 44100;
-    sdl_audioSpec.channels = 1;
+    sdl_audioSpec.channels = 2;
     //** change this
     sdl_audioSpec.format = AUDIO_S16SYS;
     //回调函数,如果声卡需要数据,则在callback设置
@@ -105,6 +105,7 @@ int play_pcm_audio(char *audio_path) {
         }
     } while (audio_buff_len != 0);
 
+    result = 0;
 
     __EXIT:
     if (audio_file) {
@@ -115,4 +116,5 @@ int play_pcm_audio(char *audio_path) {
     }
     SDL_CloseAudio();
     SDL_Quit();
+    return result;
 }

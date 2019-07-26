@@ -77,6 +77,9 @@ void start_sdl_texture() {
     do {
         //写入event到sdl_event
         SDL_WaitEvent(&sdl_event);
+        //SDL_WaitEvent(&sdl_event);
+        //这个Wait会限制调用的频率。
+
         switch (sdl_event.type) {
             case SDL_QUIT:
                 quit = 0;
@@ -106,10 +109,10 @@ void start_sdl_texture() {
 
         //切换回原来的画布
         SDL_SetRenderTarget(sdl_renderer, NULL);
-        //纹理输出到图形设备
+        //纹理输出到图形设备 ->用于计算
         SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
 
-        //上屏,推送到图形引擎,显示到屏幕
+        //上屏 -> 显示到屏幕
         SDL_RenderPresent(sdl_renderer);
 
     } while (quit);

@@ -11,10 +11,7 @@ void init_sdl_window() {
     //Render
     SDL_Renderer *sdl_renderer = NULL;
 
-
-
     SDL_Init(SDL_INIT_VIDEO);
-
 
     //1.创建窗口
     printf("Create SDL2 Windows. \n");

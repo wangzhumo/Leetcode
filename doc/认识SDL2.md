@@ -135,3 +135,21 @@ target_link_libraries(Media
 #### SDL_WaitEvent
 等待一段时间，唤醒这个轮询，去处理事件
 
+```
+
+do {
+        //写入event到sdl_event
+        SDL_WaitEvent(&sdl_event);
+        switch (sdl_event.type) {
+            case SDL_QUIT:
+                quit = 0;
+                break;
+            default:
+                SDL_Log("SDL_Event type : %d", sdl_event.type);
+        }
+
+    } while (quit);
+
+```
+处理一个简单的退出。
+

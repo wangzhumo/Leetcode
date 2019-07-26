@@ -87,7 +87,7 @@ target_link_libraries(Media
 
 
 
-## SDL的基本使用
+### SDL的基本使用
 
 #### SDL_Init(SDL_INIT_VIDEO);
 
@@ -127,7 +127,7 @@ target_link_libraries(Media
 - SDL_DestroyWindow
 - SDL_DestroyRenderer
 
-## SDL2的事件处理
+### SDL2的事件处理
 
 #### SDL_PollEvent
 一直轮询，会一直占用CPU
@@ -153,3 +153,16 @@ do {
 ```
 处理一个简单的退出。
 
+### SDL渲染相关API
+
+#### SDL_SetRenderTarget()
+设置一个目标，而非直接设置到windows上去
+
+#### SDL_RenderClear()
+覆写所有的内容（可以设置覆盖物）
+
+#### SDL_RenderCopy()
+把Render中的数据拷贝
+
+#### SDL_RenderPresent()
+上屏

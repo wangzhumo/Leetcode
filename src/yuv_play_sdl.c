@@ -72,8 +72,6 @@ int yuv_player(char *file_path) {
     int windows_height = 1080;
 
 
-
-
     //计算出一个yuv帧使用的长度
     //const unsigned int yuv_frame_length = (video_width * video_height) * 2;
     //yuv420  = y (video_width * video_height)  + (u/v (video_width * video_height)/2) * 2
@@ -122,7 +120,7 @@ int yuv_player(char *file_path) {
     printf("Create SDL2 Texture. \n");
     //IYUV: Y + U + V  (3 planes)
     //YV12: Y + V + U  (3 planes)
-    pix_format = SDL_PIXELFORMAT_NV21;
+    pix_format = SDL_PIXELFORMAT_IYUV;
 
 
     sdl_texture = SDL_CreateTexture(
@@ -217,6 +215,7 @@ int yuv_player(char *file_path) {
                     thread_exit_flag = 1;
                     continue;
                 }
+
                 break;
             case SDL_WINDOWEVENT:
                 //Resize

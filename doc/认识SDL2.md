@@ -126,3 +126,12 @@ target_link_libraries(Media
 
 - SDL_DestroyWindow
 - SDL_DestroyRenderer
+
+## SDL2的事件处理
+
+#### SDL_PollEvent
+一直轮询，会一直占用CPU
+
+#### SDL_WaitEvent
+等待一段时间，唤醒这个轮询，去处理事件
+

@@ -6,10 +6,14 @@
 
 void init_sdl_window() {
 
+    //flag quit
+    int quit = 1;
     //Windows
     SDL_Window *sdl_window = NULL;
     //Render
     SDL_Renderer *sdl_renderer = NULL;
+    //SDL_Event
+    SDL_Event sdl_event;
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -61,9 +65,20 @@ void init_sdl_window() {
     //3.推送到图形引擎,显示到屏幕
     SDL_RenderPresent(sdl_renderer);
 
+    do {
+        //写入event到sdl_event
+        SDL_WaitEvent(&sdl_event);
+        switch (sdl_event.type) {
+            case SDL_QUIT:
+                quit = 0;
+                break;
+            default:
+                SDL_Log("SDL_Event type : %d", sdl_event.type);
+        }
 
-    SDL_Delay(3000);
+    } while (quit);
 
+    //SDL_Delay(3000);
 
     __DESTROY_WINDOWS:
     SDL_DestroyWindow(sdl_window);

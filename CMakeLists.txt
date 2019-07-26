@@ -15,22 +15,20 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # add_subdirectory(lib/entityx EXCLUDE_FROM_ALL)
 # add_subdirectory(lib/glfw EXCLUDE_FROM_ALL)
 
-#include dir
-include_directories(include)
-
 aux_source_directory(src SRC_LIST)
-#set(SRC_LIST .src/*)
 
 add_executable(Media ${SRC_LIST})
 
 find_package(SDL2 REQUIRED)
 
 
-
+#include dir
 include_directories(
+        include
         ${SDL2_INCLUDE_DIR}
 )
 
-target_link_libraries(Media
+target_link_libraries(
+        Media
         ${SDL2_LIBRARY}
 )

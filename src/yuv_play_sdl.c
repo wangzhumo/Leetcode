@@ -120,7 +120,7 @@ int yuv_player(char *file_path) {
     printf("Create SDL2 Texture. \n");
     //IYUV: Y + U + V  (3 planes)
     //YV12: Y + V + U  (3 planes)
-    pix_format = SDL_PIXELFORMAT_NV21;
+    pix_format = SDL_PIXELFORMAT_INV;
 
 
     sdl_texture = SDL_CreateTexture(

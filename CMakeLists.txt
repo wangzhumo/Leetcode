@@ -19,17 +19,27 @@ set(CMAKE_BUILD_TYPE Debug CACHE STRING "set build type to debug")
 aux_source_directory(src SRC_LIST)
 
 add_executable(Media ${SRC_LIST})
+##
+# Include module pkg-config for CMake.
+##
+include(FindPkgConfig)
 
+##
+# Find SDL/FFmpeg include directories and link libraries.
+##
 find_package(SDL2 REQUIRED)
 
+find_package(FFMPEG REQUIRED)
 
 #include dir
 include_directories(
         include
+        ${FFMPEG_INCLUDE_DIRS}
         ${SDL2_INCLUDE_DIR}
 )
 
 target_link_libraries(
         Media
+        ${FFMPEG_LIBRARIES}
         ${SDL2_LIBRARY}
 )

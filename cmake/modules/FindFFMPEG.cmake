@@ -11,7 +11,8 @@
 # Also declares ${component}_FOUND for each component, eg. avcodec_FOUND etc.
 #
 
-set(FFMPEG_SEARCH_PATHS /usr/local/ffmpeg)
+set(FFMPEG_SEARCH_PATHS
+        /usr/local/ffmpeg)
 
 set(FFMPEG_COMPONENTS 
     avcodec
@@ -30,7 +31,9 @@ set(FFMPEG_FOUND TRUE)
 
 # Walk through all components declared above, and try to find the ones that have been asked
 foreach(comp ${FFMPEG_COMPONENTS})
-    list(FIND ffmpeg_FIND_COMPONENTS ${comp} _index)
+    list(FIND FFMPEG_FIND_COMPONENTS ${comp} _index)
+
+
     if(${_index} GREATER -1)
         # Component requested, try to look up the library and header for it.
         find_path(${comp}_INCLUDE_DIR lib${comp}/${comp}.h 
@@ -50,6 +53,7 @@ foreach(comp ${FFMPEG_COMPONENTS})
             set(${comp}_FOUND TRUE)
             list(APPEND FFMPEG_INCLUDE_DIRS ${${comp}_INCLUDE_DIR})
             list(APPEND FFMPEG_LIBRARIES ${${comp}_LIBRARY})
+            message(STATUS "Found FFMPEG COMPONENTS: ${${comp}_LIBRARY}")
         else()
             set(FFMPEG_FOUND FALSE)
             set(${comp}_FOUND FALSE)

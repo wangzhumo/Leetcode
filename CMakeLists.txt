@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_CXX_FLAGS “${CMAKE_CXX_FLAGS} -g”)
-set(CMAKE_BUILD_TYPE "Debug") 
+set(CMAKE_BUILD_TYPE Debug CACHE STRING "set build type to debug") 
 #Required libraries in this source dir
 # add_subdirectory(lib/entityx EXCLUDE_FROM_ALL)
 # add_subdirectory(lib/glfw EXCLUDE_FROM_ALL)

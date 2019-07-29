@@ -1,4 +1,5 @@
 {
     "cmake.ctestPath": "/usr/local/bin/ctest",
-    "cmake.cmakePath": "/usr/local/bin/cmake"
+    "cmake.cmakePath": "/usr/local/bin/cmake",
+    "code-runner.runInTerminal": true
 }

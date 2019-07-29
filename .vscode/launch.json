@@ -8,7 +8,7 @@
             "name": "(lldb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/cmake-build_debug/Media.out",
+            "program": "${workspaceFolder}/cmake-build-debug/Media",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

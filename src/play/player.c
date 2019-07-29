@@ -11,6 +11,7 @@ int start_play_video(char *video_path){
     //-------ffmpeg-------
     AVFormatContext *p_format_ctx = NULL;   //解开文件,opening multi-media file
     AVCodecContext *p_codec_ctx_origin = NULL;  //codec context
+    AVCodecContext *p_codec_ctx = NULL;  //codec context - copy from [p_codec_ctx_origin]
 
     AVCodec *p_codec = NULL;  //codecer 解码器
     AVFrame *p_frame = NULL;  //用于存放解码后的数据帧
@@ -18,7 +19,7 @@ int start_play_video(char *video_path){
     AVPicture *p_picture_yuv = NULL;  //存放解码后的YUV数据
     struct SwsContext *p_sws_ctx = NULL;  //视屏裁剪的上下文
     float aspect_ratio;  //视屏的比例
-    int vidoe_stream;  //video的序号ID
+    int video_stream;  //video的序号ID
 
 
     //------sdl2--------
@@ -58,11 +59,46 @@ int start_play_video(char *video_path){
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed to Open Video File %s \n" , video_path);
         goto __FAIL;
     }
-
-
+    //read video stream info
     if (avformat_find_stream_info(p_format_ctx,NULL) <0){
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed find stream info.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed find video stream info.");
         goto __FAIL;
+    }
+    //dump video/audio
+    av_dump_format(p_format_ctx,0,video_path,0);
+
+    video_stream = -1;
+    //find video stream
+    for (size_t i = 0; i < p_format_ctx->nb_streams; i++)
+    {   
+        if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)  //AVMediaType -> AVMEDIA_TYPE_VIDEO
+        {
+            video_stream = i; 
+            break;
+        }
+    }
+
+    if (video_stream == -1)
+    {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed find video stream info."); 
+       goto __FAIL;
+    }
+
+    //3.get video stream / codecer
+    p_codec_ctx_origin = p_format_ctx->streams[video_stream]->codec;   //获取到了video的编解码上下文
+    //获取解码器.
+    p_codec = avcodec_find_decoder(p_codec_ctx_origin->codec_id);
+    if (p_codec == NULL)
+    {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed Get video Decoder Context."); 
+       goto __FAIL;
+    }
+    //copy origin codec_ctx
+    p_codec_ctx = avcodec_alloc_context3(p_codec_ctx_origin);
+    //get codec instance
+    if (avcodec_open2(p_codec_ctx,p_codec,NULL) < 0){
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed Get video Decoder."); 
+        goto __FAIL; 
     }
 
 __FAIL:

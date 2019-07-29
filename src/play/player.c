@@ -30,8 +30,8 @@ int start_play_video(char *video_path){
     Uint32 pixel_format;   //YUV的编码格式
 
     //0.判断参数
-    if (video_path){
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"IllegalArgumentException file_path. \n");
+    if (!video_path){
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"IllegalArgumentException file_path = %s. \n",video_path);
         return result; 
     }
     

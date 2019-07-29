@@ -1,5 +1,8 @@
 {
     "cmake.ctestPath": "/usr/local/bin/ctest",
     "cmake.cmakePath": "/usr/local/bin/cmake",
-    "code-runner.runInTerminal": true
+    "code-runner.runInTerminal": true,
+    "files.associations": {
+        "yuv_play_sdl.h": "c"
+    }
 }

@@ -17,8 +17,12 @@ set(CMAKE_BUILD_TYPE Debug CACHE STRING "set build type to debug")
 # add_subdirectory(lib/glfw EXCLUDE_FROM_ALL)
 
 aux_source_directory(src SRC_LIST)
+aux_source_directory(src/sdls SDL_SRC_LIST)
+aux_source_directory(src/play PLAY_SRC_LIST)
+set(ALL_SOURCE ${SRC_LIST} ${SDL_SRC_LIST} ${SDL_SRC_LIST})
 
-add_executable(Media ${SRC_LIST})
+
+add_executable(Media ${ALL_SOURCE})
 
 ##
 # Find SDL/FFmpeg include directories and link libraries.

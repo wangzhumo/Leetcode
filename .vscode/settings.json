@@ -3,6 +3,10 @@
     "cmake.cmakePath": "/usr/local/bin/cmake",
     "code-runner.runInTerminal": true,
     "files.associations": {
-        "yuv_play_sdl.h": "c"
+        "*.kt": "kotlin",
+        "yuv_play_sdl.h": "c",
+        "first_windows.h": "c",
+        "avcodec.h": "c",
+        "sdl.h": "c"
     }
 }

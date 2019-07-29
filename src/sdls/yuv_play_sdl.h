@@ -7,7 +7,7 @@
 
 #endif //MEDIA_YUV_PLAY_SDL_H
 
-#include "SDL.h"
+#include <SDL.h>
 #include <stdio.h>
 
 int yuv_player(char *file_name);

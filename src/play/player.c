@@ -100,6 +100,7 @@ int start_play_video(char *video_path){
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed Get video Decoder."); 
         goto __FAIL; 
     }
+    
 
 __FAIL:
     SDL_Quit();

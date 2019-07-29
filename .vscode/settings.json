@@ -1,0 +1,4 @@
+{
+    "cmake.ctestPath": "/usr/local/bin/ctest",
+    "cmake.cmakePath": "/usr/local/bin/cmake"
+}

@@ -8,7 +8,7 @@
 #endif //MEDIA_AUDIO_PLAY_SDL_H
 
 
-#include "SDL.h"
+#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 

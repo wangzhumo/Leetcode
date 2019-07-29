@@ -7,7 +7,7 @@
 
 #endif //MEDIA_FIRST_WINDOWS_H
 
-#include "SDL.h"
+#include <SDL.h>
 #include <stdio.h>
 
 void init_sdl_window();

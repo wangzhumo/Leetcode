@@ -61,7 +61,7 @@ int play_pcm_audio(char *audio_path) {
     //1.open audio file
     audio_file = fopen(audio_path, "r");
     if (!audio_file) {
-        printf("Failed to open audio file &s. \n", audio_path);
+        printf("Failed to open audio file %s. \n", audio_path);
         goto __EXIT;
     }
 

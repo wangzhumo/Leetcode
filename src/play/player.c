@@ -3,14 +3,12 @@
 //
 #include "player.h"
 
-
-
 int start_play_video(char *video_path){
     int result = -1;
 
     //-------ffmpeg-------
     AVFormatContext *p_format_ctx = NULL;   //解开文件,opening multi-media file
-    AVCodecContext *p_codec_ctx_origin = NULL;  //codec context
+    const AVCodecContext *p_codec_ctx_origin = NULL;  //codec context
     AVCodecContext *p_codec_ctx = NULL;  //codec context - copy from [p_codec_ctx_origin]
 
     AVCodec *p_codec = NULL;  //codecer 解码器
@@ -94,13 +92,13 @@ int start_play_video(char *video_path){
        goto __FAIL;
     }
     //copy origin codec_ctx
-    p_codec_ctx = avcodec_alloc_context3(p_codec_ctx_origin);
+    p_codec_ctx = avcodec_alloc_context3(p_codec);
     //get codec instance
     if (avcodec_open2(p_codec_ctx,p_codec,NULL) < 0){
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed Get video Decoder."); 
         goto __FAIL; 
     }
-    
+
 
 __FAIL:
     SDL_Quit();

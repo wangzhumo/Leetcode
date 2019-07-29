@@ -7,7 +7,7 @@
 
 #endif //MEDIA_TEXTURE_SDL_H
 
-#include "SDL.h"
+#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 

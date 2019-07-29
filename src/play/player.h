@@ -6,12 +6,11 @@
 
 #endif //MEDIA_PLAYER_H
 
-
-#include <SDL.h>
 #include <stdio.h>
+#include <SDL.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 
-void start_play_video(char *video_path);
+int start_play_video(char *video_path);
 

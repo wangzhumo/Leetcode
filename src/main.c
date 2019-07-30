@@ -4,6 +4,6 @@
 #include "play/player.h"
 
 int main(int argc, char *args[]) {
-   	start_play_video("/Users/phyooos/media/outputname.mp4");
+   	start_play_video("/Users/wangzhumo/Develop/Media/orginstory_sombra.mp4");
     return 0;
 }

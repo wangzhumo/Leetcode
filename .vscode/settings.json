@@ -8,6 +8,7 @@
         "first_windows.h": "c",
         "avcodec.h": "c",
         "sdl.h": "c",
-        "player.h": "c"
+        "player.h": "c",
+        "__locale": "c"
     }
 }

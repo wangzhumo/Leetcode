@@ -1,9 +1,9 @@
 //
 // Created by 王诛魔 on 2019/7/26.
 //
-#include "player.h"
+#include "player_only_video.h"
 
-int start_play_video(char *video_path) {
+int play_audio_video(char *video_path) {
     int result = -1;
 
     //-------ffmpeg-------
@@ -180,8 +180,6 @@ int start_play_video(char *video_path) {
 //            goto __FAIL;
 //        }
 //    }
-
-
     while (av_read_frame(p_format_ctx, &packet) > 0) {     //read package 读取解码前的数据
         //confirm package from video frame
         if (packet.stream_index == video_stream) {

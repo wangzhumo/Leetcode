@@ -83,17 +83,25 @@ int play_only_video(char *video_path) {
 
     //3.get video stream / codecer
     p_codec_ctx_origin = p_format_ctx->streams[video_stream]->codec;   //获取到了video的编解码上下文
+
     //获取解码器.
     p_codec = avcodec_find_decoder(p_codec_ctx_origin->codec_id);
     if (p_codec == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Get video Decoder Context.");
         goto __FAIL;
     }
+
     //copy origin codec_ctx
     p_codec_ctx = avcodec_alloc_context3(p_codec);
+    if (avcodec_copy_context(p_codec_ctx, p_codec_ctx_origin) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't copy codec context");
+        goto __FAIL;// Error copying codec context
+    }
+
+
     //get codec instance
     if (avcodec_open2(p_codec_ctx, p_codec, NULL) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Get video Decoder.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Open Decoder.");
         goto __FAIL;
     }
 
@@ -104,6 +112,7 @@ int play_only_video(char *video_path) {
     //get video size
     window_height = p_codec_ctx->height;
     window_width = p_codec_ctx->width;
+    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "windows_h = %d , windows_w = %d", window_height, window_width);
 
     //create windows
     p_windows = SDL_CreateWindow(

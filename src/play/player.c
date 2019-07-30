@@ -18,6 +18,7 @@ int start_play_video(char *video_path) {
     struct SwsContext *p_sws_ctx = NULL;  //视屏裁剪的上下文
     float aspect_ratio;  //视屏的比例
     int video_stream;  //video的序号ID
+    int read_frame_state;
 
 
     //------sdl2--------
@@ -162,10 +163,114 @@ int start_play_video(char *video_path) {
             NULL
     );
 
+    //6.read package / refresh yuv data
+    //New Api
+//    int av_codec_result;
+//    av_codec_result = avcodec_send_packet(p_codec_ctx, &packet);
+//    if (av_codec_result < 0) {
+//        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "avcodec_send_frame failed.");
+//        goto __FAIL;
+//    }
+//    while (av_codec_result >= 0) {
+//        av_codec_result = avcodec_receive_frame(p_codec_ctx, p_frame);
+//        if (av_codec_result == AVERROR(EAGAIN) || av_codec_result == AVERROR_EOF) {
+//            return result;
+//        } else if (av_codec_result < 0) {
+//            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error during decode video package.");
+//            goto __FAIL;
+//        }
+//    }
 
 
+    while (av_read_frame(p_format_ctx, &packet) > 0) {     //read package 读取解码前的数据
+        //confirm package from video frame
+        if (packet.stream_index == video_stream) {
+            //Decode video frame
+            avcodec_decode_video2(p_codec_ctx, p_frame, &read_frame_state, &packet);
+            //get video frame ?
+            if (read_frame_state) {
+                //convert image into YUV format
+                sws_scale(p_sws_ctx,
+                          (uint8_t const *const *) p_frame->data,
+                          p_frame->linesize,
+                          0,
+                          p_codec_ctx->height,
+                          p_picture_yuv->data,
+                          p_picture_yuv->linesize
+                );
+
+                //更新数据到 texture 上
+                SDL_UpdateYUVTexture(
+                        p_texture,
+                        NULL,
+                        p_picture_yuv->data[0], p_picture_yuv->linesize[0],
+                        p_picture_yuv->data[1], p_picture_yuv->linesize[1],
+                        p_picture_yuv->data[2], p_picture_yuv->linesize[2]
+                );
+
+                //change windows size
+                window_rect.x = 0;
+                window_rect.y = 0;
+                window_rect.w = p_codec_ctx->width;
+                window_rect.h = p_codec_ctx->height;
+
+                //refresh yuv data to windows
+                SDL_RenderClear(p_renderer);
+                SDL_RenderCopy(p_renderer, p_texture, NULL, &window_rect);
+                SDL_RenderPresent(p_renderer);
+            }
+        }
+
+        SDL_Event event;
+        SDL_PollEvent(&event);
+        switch (event.type) {
+            case SDL_QUIT:
+                goto __QUIT;
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    __QUIT:
+    read_frame_state = 0;  //这样会退出while循环
 
     __FAIL:
+    //free frame data
+    if (p_frame) {
+        av_frame_free(&p_frame);
+    }
+
+    //free pict
+    if (p_picture_yuv) {
+        avpicture_free(p_picture_yuv);
+    }
+
+    //close codec
+    if (p_codec_ctx_origin) {
+        avcodec_close(p_codec_ctx_origin);
+    }
+    if (p_codec_ctx) {
+        avcodec_close(p_codec_ctx);
+    }
+
+    //close file
+    if (p_format_ctx) {
+        avformat_close_input(p_format_ctx);
+    }
+
+    //destroy sdl
+    if (p_windows) {
+        SDL_DestroyWindow(p_windows);
+    }
+    if (p_texture) {
+        SDL_DestroyTexture(p_texture);
+    }
+    if (p_renderer) {
+        SDL_DestroyRenderer(p_renderer);
+    }
     SDL_Quit();
+
     return result;
 }

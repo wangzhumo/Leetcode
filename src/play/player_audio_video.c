@@ -2,6 +2,30 @@
 // Created by 王诛魔 on 2019/7/26.
 //
 #include "player_only_video.h"
+#define SDL_AUDIO_BUFFER_SIZE 1024
+#define MAX_AUDIO_FRAME_SIZE 192000
+
+
+/**
+ * 播放设备的回调,调取数据
+ * @param p_audio_ctx  AVCodecContext
+ * @param stream 音频设备的buffer
+ * @param length
+ */
+void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
+    AVCodecContext *p_audio_codec_ctx = p_audio_ctx;
+
+
+}
+
+/**
+ * 输入音频解码package
+ * @param pPacket
+ * @param pAVPacket
+ */
+void insert_audio_package_queue(AVPacket *pPacket, AVPacket *pAVPacket) {
+
+}
 
 /**
  * 使用FFmpeg解码 -> SDL2进行播放
@@ -43,12 +67,16 @@ int play_audio_video(char *video_path) {
     SDL_Rect window_rect;   //窗口的显示范围
     Uint32 pixel_format;   //YUV的编码格式
 
+    //------audio-------
+    SDL_Event sdl_event;
+    SDL_AudioSpec src_spec;
+    SDL_AudioSpec dts_spec;
+
     //0.判断参数
     if (!video_path) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "IllegalArgumentException file_path = %s. \n", video_path);
         return result;
     }
-
 
     //1.初始化
     //SDL初始化
@@ -75,21 +103,60 @@ int play_audio_video(char *video_path) {
     SDL_Log("call av_dump_format end. \n");
 
     video_stream = -1;
-    //find video stream
-    for (size_t i = 0; i < p_format_ctx->nb_streams; i++) {
-        if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)  //AVMediaType -> AVMEDIA_TYPE_VIDEO
-        {
+    audio_stream = -1;
+    //find video/audio stream index
+    for (int i = 0; i < p_format_ctx->nb_streams; i++) {
+        //AVMediaType -> AVMEDIA_TYPE_VIDEO
+        if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && video_stream < 0) {
             video_stream = i;
-            break;
+        } else if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && audio_stream < 0) {
+            audio_stream = i;
         }
     }
-    SDL_Log("find video stream succeed. \n");
-    if (video_stream == -1) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed find video stream info.");
+
+    SDL_Log("find video stream  = %d. \n", video_stream);
+    SDL_Log("find audio stream  = %d. \n", audio_stream);
+    if (video_stream == -1 || audio_stream == -1) {
+        SDL_Log("Failed find video/audio stream info.");
         goto __FAIL;
     }
 
-    //3.get video stream / codecer
+
+    //3.get audio/video stream / codec
+    //audio codec
+    p_audio_codec_ctx_origin = p_format_ctx->streams[audio_stream]->codec;
+    p_audio_codec = avcodec_find_decoder(p_audio_codec_ctx_origin->codec_id);
+    SDL_Log("get audio codec context succeed. \n");
+
+    //copy origin audio_codec_ctx
+    p_audio_codec_ctx = avcodec_alloc_context3(p_audio_codec);
+    if (avcodec_copy_context(p_audio_codec_ctx, p_audio_codec_ctx_origin) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't copy audio codec context");
+        goto __FAIL;
+    }
+
+    //set audio settings.
+    dts_spec.freq = p_audio_codec_ctx->sample_rate;
+    dts_spec.channels = p_audio_codec_ctx->channels;
+    dts_spec.format = AUDIO_S16SYS;
+    dts_spec.silence = 0;
+    dts_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+    dts_spec.callback = audio_callback;
+    dts_spec.userdata = p_audio_codec_ctx;
+
+    //open audio device
+    if (SDL_OpenAudio(&dts_spec, &src_spec)) {
+        //0  成功
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Failed to open audio device \n");
+        goto __FAIL;
+    }
+
+    //open audio code
+    avcodec_open2(p_audio_codec_ctx, p_audio_codec, NULL);
+
+
+
+    //video codec
     p_codec_ctx_origin = p_format_ctx->streams[video_stream]->codec;   //获取到了video的编解码上下文
     SDL_Log("get video codec context succeed. \n");
 
@@ -103,9 +170,9 @@ int play_audio_video(char *video_path) {
 
     //copy origin codec_ctx
     p_codec_ctx = avcodec_alloc_context3(p_codec);
-    SDL_LogDebug(SDL_LOG_PRIORITY_DEBUG, "copy video codec context succeed. \n");
+    SDL_Log("copy video codec context succeed. \n");
     if (avcodec_copy_context(p_codec_ctx, p_codec_ctx_origin) != 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't copy codec context");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't copy video codec context");
         goto __FAIL;// Error copying codec context
     }
 
@@ -218,7 +285,14 @@ int play_audio_video(char *video_path) {
                 SDL_RenderClear(p_renderer);
                 SDL_RenderCopy(p_renderer, p_texture, NULL, &window_rect);
                 SDL_RenderPresent(p_renderer);
-            }
+
+                av_free_packet(&packet);
+
+        } else if(packet.stream_index == audio_stream){
+            //输入队列中.
+            insert_audio_package_queue(&packet, &packet);
+        } else {
+            av_free_packet(&packet);
         }
 
         SDL_Event event;
@@ -277,3 +351,4 @@ int play_audio_video(char *video_path) {
     SDL_Quit();
     return result;
 }
+

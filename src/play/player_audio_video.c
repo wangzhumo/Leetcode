@@ -50,9 +50,9 @@ int play_audio_video(char *video_path) {
     //2.open video file,find video info
     /*
      * AVFormatContext ** 	ps,  指针->指针 ?
-     * const char * 	url, 
+     * const char * 	url,
      * AVInputFormat * 	fmt,
-     * AVDictionary ** 	options 
+     * AVDictionary ** 	options
      */
     if (avformat_open_input(&p_format_ctx, video_path, NULL, NULL) != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to Open Video File %s \n", video_path);
@@ -65,6 +65,7 @@ int play_audio_video(char *video_path) {
     }
     //dump video/audio
     av_dump_format(p_format_ctx, 0, video_path, 0);
+    SDL_Log("call av_dump_format end. \n");
 
     video_stream = -1;
     //find video stream
@@ -75,7 +76,7 @@ int play_audio_video(char *video_path) {
             break;
         }
     }
-
+    SDL_Log("find video stream succeed. \n");
     if (video_stream == -1) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed find video stream info.");
         goto __FAIL;
@@ -83,19 +84,31 @@ int play_audio_video(char *video_path) {
 
     //3.get video stream / codecer
     p_codec_ctx_origin = p_format_ctx->streams[video_stream]->codec;   //获取到了video的编解码上下文
+    SDL_Log("get video codec context succeed. \n");
+
     //获取解码器.
     p_codec = avcodec_find_decoder(p_codec_ctx_origin->codec_id);
+    SDL_Log("get video codec succeed. \n");
     if (p_codec == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Get video Decoder Context.");
         goto __FAIL;
     }
+
     //copy origin codec_ctx
     p_codec_ctx = avcodec_alloc_context3(p_codec);
+    SDL_LogDebug(SDL_LOG_PRIORITY_DEBUG, "copy video codec context succeed. \n");
+    if (avcodec_copy_context(p_codec_ctx, p_codec_ctx_origin) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't copy codec context");
+        goto __FAIL;// Error copying codec context
+    }
+
+
     //get codec instance
     if (avcodec_open2(p_codec_ctx, p_codec, NULL) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Get video Decoder.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed Open Decoder.");
         goto __FAIL;
     }
+    SDL_Log("call avcodec_open2,get codec succeed. \n");
 
     //alloc frame , 解码后的数据帧
     p_frame = av_frame_alloc();
@@ -104,6 +117,7 @@ int play_audio_video(char *video_path) {
     //get video size
     window_height = p_codec_ctx->height;
     window_width = p_codec_ctx->width;
+    SDL_Log("windows_h = %d , windows_w = %d", window_height, window_width);
 
     //create windows
     p_windows = SDL_CreateWindow(
@@ -114,7 +128,7 @@ int play_audio_video(char *video_path) {
             window_height,
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
-
+    SDL_Log("End call SDL_CreateWindow \n");
     if (p_windows == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to Create SDL_Window.");
         goto __FAIL;
@@ -126,15 +140,16 @@ int play_audio_video(char *video_path) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to Create renderer.");
         goto __FAIL;
     }
-
+    SDL_Log("End call SDL_CreateRenderer \n");
     //create texture
     pixel_format = SDL_PIXELFORMAT_IYUV;   //通过IYUV的格式显示
+
     p_texture = SDL_CreateTexture(
             p_renderer,
             pixel_format,
             SDL_TEXTUREACCESS_STREAMING,
             window_width, window_height);
-
+    SDL_Log("End call SDL_CreateTexture \n");
     //5.create SWS context
     /*
      * @param srcW the width of the source image
@@ -162,7 +177,7 @@ int play_audio_video(char *video_path) {
             NULL,
             NULL
     );
-
+    SDL_Log("End call sws_getContext \n");
     //6.read package / refresh yuv data
     //New Api
 //    int av_codec_result;
@@ -180,7 +195,17 @@ int play_audio_video(char *video_path) {
 //            goto __FAIL;
 //        }
 //    }
-    while (av_read_frame(p_format_ctx, &packet) > 0) {     //read package 读取解码前的数据
+    //alloc picture
+    p_picture_yuv = (AVPicture *) malloc(sizeof(AVPicture));
+    avpicture_alloc(
+            p_picture_yuv,
+            AV_PIX_FMT_YUV420P,
+            p_codec_ctx->width,
+            p_codec_ctx->height
+    );
+    SDL_Log("End call avpicture_alloc \n");
+
+    while (av_read_frame(p_format_ctx, &packet) >= 0) {     //read package 读取解码前的数据
         //confirm package from video frame
         if (packet.stream_index == video_stream) {
             //Decode video frame
@@ -243,6 +268,7 @@ int play_audio_video(char *video_path) {
     //free pict
     if (p_picture_yuv) {
         avpicture_free(p_picture_yuv);
+        free(p_picture_yuv);
     }
 
     //close codec
@@ -255,20 +281,22 @@ int play_audio_video(char *video_path) {
 
     //close file
     if (p_format_ctx) {
-        avformat_close_input(p_format_ctx);
+        avformat_close_input(&p_format_ctx);
     }
 
     //destroy sdl
     if (p_windows) {
         SDL_DestroyWindow(p_windows);
     }
-    if (p_texture) {
-        SDL_DestroyTexture(p_texture);
-    }
+
     if (p_renderer) {
         SDL_DestroyRenderer(p_renderer);
     }
-    SDL_Quit();
 
+    if (p_texture) {
+        SDL_DestroyTexture(p_texture);
+    }
+
+    SDL_Quit();
     return result;
 }

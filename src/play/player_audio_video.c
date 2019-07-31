@@ -151,20 +151,6 @@ int play_audio_video(char *video_path) {
             window_width, window_height);
     SDL_Log("End call SDL_CreateTexture \n");
     //5.create SWS context
-    /*
-     * @param srcW the width of the source image
-     * @param srcH the height of the source image
-     * @param srcFormat the source image format
-     * input video info
-     *
-     * @param dstW the width of the destination image
-     * @param dstH the height of the destination image
-     * @param dstFormat the destination image format
-     * target video info
-     *
-     * @param flags specify which algorithm and options to use for rescaling
-     * @param param extra parameters to tune the used scale
-     */
     p_sws_ctx = sws_getContext(
             p_codec_ctx->width,   //原始宽，高
             p_codec_ctx->height,
@@ -179,22 +165,6 @@ int play_audio_video(char *video_path) {
     );
     SDL_Log("End call sws_getContext \n");
     //6.read package / refresh yuv data
-    //New Api
-//    int av_codec_result;
-//    av_codec_result = avcodec_send_packet(p_codec_ctx, &packet);
-//    if (av_codec_result < 0) {
-//        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "avcodec_send_frame failed.");
-//        goto __FAIL;
-//    }
-//    while (av_codec_result >= 0) {
-//        av_codec_result = avcodec_receive_frame(p_codec_ctx, p_frame);
-//        if (av_codec_result == AVERROR(EAGAIN) || av_codec_result == AVERROR_EOF) {
-//            return result;
-//        } else if (av_codec_result < 0) {
-//            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error during decode video package.");
-//            goto __FAIL;
-//        }
-//    }
     //alloc picture
     p_picture_yuv = (AVPicture *) malloc(sizeof(AVPicture));
     avpicture_alloc(

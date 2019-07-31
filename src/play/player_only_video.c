@@ -3,6 +3,11 @@
 //
 #include "player_only_video.h"
 
+/**
+ * 使用FFmpeg解码 -> SDL2进行播放 video stream
+ * @param video_path
+ * @return result
+ */
 int play_only_video(char *video_path) {
     int result = -1;
 

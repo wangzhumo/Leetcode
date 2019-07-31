@@ -3,21 +3,34 @@
 //
 #include "player_only_video.h"
 
+/**
+ * 使用FFmpeg解码 -> SDL2进行播放
+ * @param video_path
+ * @return result
+ */
 int play_audio_video(char *video_path) {
     int result = -1;
 
     //-------ffmpeg-------
     AVFormatContext *p_format_ctx = NULL;   //解码文件,opening multi-media file
-    const AVCodecContext *p_codec_ctx_origin = NULL;  //codec context
+    AVCodecContext *p_codec_ctx_origin = NULL;  //codec context
     AVCodecContext *p_codec_ctx = NULL;  //codec context - copy from [p_codec_ctx_origin]
-
     AVCodec *p_codec = NULL;  //codecer 解码器
+    //audio
+    AVCodecContext *p_audio_codec_ctx_origin = NULL;
+    AVCodecContext *p_audio_codec_ctx = NULL;
+    AVCodec *p_audio_codec = NULL;
+
     AVFrame *p_frame = NULL;  //用于存放解码后的数据帧
     AVPacket packet;   //文件解码前的数据包
     AVPicture *p_picture_yuv = NULL;  //存放解码后的YUV数据
+
     struct SwsContext *p_sws_ctx = NULL;  //视屏裁剪的上下文
+    struct SwrContext *p_swr_ctx = NULL;  //音频的上下文
+
     float aspect_ratio;  //视屏的比例
     int video_stream;  //video的序号ID
+    int audio_stream;  //audio的序号ID
     int read_frame_state;
 
 
@@ -48,12 +61,6 @@ int play_audio_video(char *video_path) {
     av_register_all();
 
     //2.open video file,find video info
-    /*
-     * AVFormatContext ** 	ps,  指针->指针 ?
-     * const char * 	url,
-     * AVInputFormat * 	fmt,
-     * AVDictionary ** 	options
-     */
     if (avformat_open_input(&p_format_ctx, video_path, NULL, NULL) != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to Open Video File %s \n", video_path);
         goto __FAIL;

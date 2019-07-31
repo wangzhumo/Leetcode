@@ -268,6 +268,7 @@ int play_only_video(char *video_path) {
     //free pict
     if (p_picture_yuv) {
         avpicture_free(p_picture_yuv);
+        free(p_picture_yuv);
     }
 
     //close codec

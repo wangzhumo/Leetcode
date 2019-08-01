@@ -7,6 +7,5 @@
 
 #endif //MEDIA_MEDIA_DEMUX_H
 
-#include "media_helper.h"
 
-int play(char *path);
+int play2(char *path);

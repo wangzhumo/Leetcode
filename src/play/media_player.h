@@ -6,6 +6,6 @@
 #define MEDIA_MEDIA_PLAYER_H
 
 #endif //MEDIA_MEDIA_PLAYER_H
-
+#include "media_helper.h"
 
 int play(char *path);

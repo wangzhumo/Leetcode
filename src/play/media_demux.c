@@ -4,6 +4,6 @@
 
 #include "media_demux.h"
 
-int play(char *path){
+int play2(char *path){
 
 }

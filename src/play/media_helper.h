@@ -26,56 +26,60 @@
 
 typedef struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;   //FFmpeg提供，单链表，其中 next -> 指向下一个元素
-    int nb_packets;  //packet 的数量
-    int size;   //size 总的大小
+    int nb_packets;     //packet 的数量
+    int size;           //size 总的大小
     SDL_mutex *mutex;   //互斥，用于加锁
-    SDL_cond *cond;   //处理同步使用
+    SDL_cond *cond;     //处理同步使用
 } PacketQueue;
 
 typedef struct VideoPicture {
-    AVPicture *pict;
+    AVPicture *picture;
     int width, height; /* source height & width */
     int allocated;
 } VideoPicture;
 
-
+/**
+ * 保存所有的媒体信息.
+ */
 typedef struct VideoState {
     //for multi-media file
-    char filename[1024];
-    AVFormatContext *pFormatCtx;
+    char filename[1024];                    //媒体文件
+    AVFormatContext *pFormatCtx;            //媒体的上下文 - 打开媒体文件后
 
-    int videoStream, audioStream;
+    int videoIndex, audioIndex;             //音/视频的index
 
     //for audio
-    AVStream *audio_st;
-    AVCodecContext *audio_ctx;
-    PacketQueue audioq;
-    uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
-    unsigned int audio_buf_size;
-    unsigned int audio_buf_index;
-    AVFrame audio_frame;
-    AVPacket audio_pkt;
-    uint8_t *audio_pkt_data;
-    int audio_pkt_size;
-    struct SwrContext *audio_swr_ctx;
+    AVStream *audio_stream;                 //音频流
+    AVCodecContext *audio_ctx;              //音频解码上下文
+    PacketQueue audio_queue;                //音频解码队列
+    uint8_t audio_buffer[(MAX_AUDIO_FRAME_SIZE * 3) / 2];  //解码后的音频buffer
+    unsigned int audio_buffer_size;         //解码的长度
+    unsigned int audio_buffer_index;        //解码后buffer的使用的长度  [audio_buffer_index,audio_buffer_size]就是未使用的长度
+    AVFrame audio_frame;                    //音频帧
+    AVPacket audio_packet;                  //解码前音频packet
+    uint8_t *audio_packet_data;             //解码前音频packet -> 数据的指针
+    int audio_packet_size;                  //数据长度
+    struct SwrContext *audio_swr_ctx;       //音频转换器的上下文,重采样
 
     //for video
-    AVStream *video_st;
-    AVCodecContext *video_ctx;
-    PacketQueue videoq;
-    struct SwsContext *sws_ctx;
+    AVStream *video_stream;                 //视频流
+    AVCodecContext *video_ctx;              //视频解码上下文
+    PacketQueue video_queue;                //视频待解码队列
+    struct SwsContext *video_sws_ctx;       //视频重采样上下文
 
-    VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
-    int pictq_size, pictq_rindex, pictq_windex;
+    VideoPicture picture_queue[VIDEO_PICTURE_QUEUE_SIZE];       //视频的每一帧(YUV),已经解码完毕
+    int picture_queue_size;                 //视频队列的长度
+    int picture_queue_rindex;               //视频队列的读取位置
+    int picture_queue_windex;               //视频队列的写入位置
 
     //for thread
-    SDL_mutex *pictq_mutex;
-    SDL_cond *pictq_cond;
+    SDL_mutex *picture_queue_mutex;         //视频帧队列的锁
+    SDL_cond *picture_queue_cond;           //视频帧队列的信号量
 
-    SDL_Thread *parse_tid;
-    SDL_Thread *video_tid;
+    SDL_Thread *parse_demux_tid;            //解复用线程
+    SDL_Thread *video_decode_tid;           //视频解码线程
 
-    int quit;
+    int quit;                               //结束进程.
 
 } VideoState;
 

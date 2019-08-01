@@ -6,8 +6,85 @@
 
 
 static SwrContext *p_swr_ctx = NULL;  //音频的上下文
-static int quit;
 static PacketQueue p_audio_queue;
+static VideoState global_video_state;
+
+/**
+ * 给队列中存入数据
+ * @param q
+ * @param pkt
+ * @return
+ */
+int insert_audio_packet_queue(PacketQueue *q, AVPacket *pkt) {
+    AVPacketList *pkt1;
+    if(av_dup_packet(pkt) < 0) {
+        return -1;
+    }
+    pkt1 = av_malloc(sizeof(AVPacketList));
+    if (!pkt1)
+        return -1;
+    pkt1->pkt = *pkt;
+    pkt1->next = NULL;
+
+    SDL_LockMutex(q->mutex);
+
+    if (!q->last_pkt)
+        q->first_pkt = pkt1;
+    else
+        q->last_pkt->next = pkt1;
+    q->last_pkt = pkt1;
+    q->nb_packets++;
+    q->size += pkt1->pkt.size;
+    //fprintf(stderr, "enqueue, packets:%d, send cond signal\n", q->nb_packets);
+    SDL_CondSignal(q->cond);
+
+    SDL_UnlockMutex(q->mutex);
+    return 0;
+}
+
+
+/**
+ * 获取队列中的数据
+ * @param q
+ * @param pkt
+ * @param block
+ * @return
+ */
+int select_audio_packet_queue(PacketQueue *q, AVPacket *pkt,int block) {
+    AVPacketList *pkt1;
+    int ret;
+
+    SDL_LockMutex(q->mutex);
+
+    for(;;) {
+        if(global_video_state.quit) {
+            fprintf(stderr, "quit from queue_get\n");
+            ret = -1;
+            break;
+        }
+
+        pkt1 = q->first_pkt;
+        if (pkt1) {
+            q->first_pkt = pkt1->next;
+            if (!q->first_pkt)
+                q->last_pkt = NULL;
+            q->nb_packets--;
+            q->size -= pkt1->pkt.size;
+            *pkt = pkt1->pkt;
+            av_free(pkt1);
+            ret = 1;
+            break;
+        } else if (!block) {
+            ret = 0;
+            break;
+        } else {
+            fprintf(stderr, "queue is empty, so wait a moment and wait a cond signal\n");
+            SDL_CondWait(q->cond, q->mutex);
+        }
+    }
+    SDL_UnlockMutex(q->mutex);
+    return ret;
+}
 
 /**
  * 封装解码音频数据
@@ -69,7 +146,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
         if (av_packet.data) {
             av_free_packet(&av_packet);
         }
-        if (quit) {
+        if (global_video_state.quit) {
             return -1;
         }
 
@@ -92,12 +169,11 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
  * @param length buffer可用的大小
  */
 void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
-    SDL_Log("audio_callback length = %d", length);
     AVCodecContext *p_audio_codec_ctx = (AVCodecContext *) p_audio_ctx;
     int unused_data_length;  //还没用使用的audio_buffer数据长度
     int decode_audio_size;    //解码过的音频数据长度.
 
-    static uint8_t audio_buffer[(MAX_AUDIO_FRAME_SIZE * 3) / 12];
+    static uint8_t audio_buffer[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
     //实际上的audio_buffer长度,decode_audio_size可能为空,则填充buffer的就是静默音
     static unsigned int audio_buffer_size = 0;
     //当前已经被使用过的index
@@ -105,17 +181,14 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
 
     //如果大于0,则可以读音频数据
     while (length > 0) {
-        SDL_Log("audio_callback length > 0");
         //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
         if (audio_buffer_index >= audio_buffer_size) {
             decode_audio_size = audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
             //如果解码成功.
             if (decode_audio_size >= 0) {
-                SDL_Log("audio_decode_frame succeed.");
                 audio_buffer_size = decode_audio_size;
             } else {
                 //如果为空,就补上静默音
-                SDL_Log("audio_decode_frame fail  + memset.");
                 audio_buffer_size = 1024;
                 memset(audio_buffer, 0, audio_buffer_size);
             }
@@ -439,7 +512,7 @@ int play_audio_video(char *video_path) {
         SDL_PollEvent(&event);
         switch (event.type) {
             case SDL_QUIT:
-                quit = 1;
+                global_video_state.quit = 1;
                 goto __QUIT;
             default:
                 break;

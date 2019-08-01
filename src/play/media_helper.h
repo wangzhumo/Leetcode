@@ -79,23 +79,5 @@ typedef struct VideoState {
 
 } VideoState;
 
-/**
- * 获取队列中的数据
- * @param q
- * @param pkt
- * @return
- */
-int select_audio_packet_queue(PacketQueue *q, AVPacket *pkt, int block);
-
-/**
- * 给队列中存入数据
- * @param q
- * @param pkt
- * @param block
- * @return
- */
-int insert_audio_packet_queue(PacketQueue *q, AVPacket *pkt);
 
 void packet_queue_init(PacketQueue *q);
-
-VideoState *global_video_state;

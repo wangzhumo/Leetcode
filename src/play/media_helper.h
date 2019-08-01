@@ -82,8 +82,8 @@ typedef struct VideoState {
 
 void packet_queue_init(PacketQueue *q);
 
-int select_audio_packet_queue(PacketQueue *q, AVPacket *pkt,int block);
+int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt,int block);
 
-int insert_audio_packet_queue(PacketQueue *q, AVPacket *pkt);
+int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt);
 
 static VideoState global_video_state;

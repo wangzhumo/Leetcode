@@ -10,6 +10,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <libavutil/avstring.h>
 #include <libswresample/swresample.h>
 
 #define SDL_AUDIO_BUFFER_SIZE 1024

@@ -15,7 +15,7 @@ int play(char *path) {
 
     //init VideoState
     state = av_malloc(sizeof(VideoState));
-    //av_strlcpy(state->filename, path, sizeof(state->filename));
+    av_strlcpy(state->filename, path, sizeof(state->filename));
     //register all
     av_register_all();
 

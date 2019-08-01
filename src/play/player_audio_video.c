@@ -5,8 +5,9 @@
 #include "player_audio_video.h"
 
 
-static struct SwrContext *p_swr_ctx = NULL;  //音频的上下文
+static SwrContext *p_swr_ctx = NULL;  //音频的上下文
 static int quit;
+static PacketQueue p_audio_queue;
 
 /**
  * 封装解码音频数据
@@ -22,7 +23,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
     static int audio_package_size = 0;
     static AVFrame av_frame;
 
-    int decode_length;
+    int decode_length;   //解码的长度
     int data_size;
 
 
@@ -56,7 +57,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
                 swr_convert(p_swr_ctx,
                             &audio_buffer,
                             MAX_AUDIO_FRAME_SIZE * 3 / 2,
-                            (const uint8_t) av_frame.data,
+                            (const uint8_t **) av_frame.data,
                             av_frame.nb_samples
                 );
             }
@@ -73,7 +74,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
         }
 
         //继续取数据
-        if (select_audio_packet_queue(NULL, &av_packet, 1) < 0) {
+        if (select_audio_packet_queue(&p_audio_queue, &av_packet, 1) < 0) {
             //取不到数据,则退出
             return -1;
         }
@@ -90,9 +91,9 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
  * @param stream 音频设备的buffer
  * @param length buffer可用的大小
  */
-void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
-
-    AVCodecContext *p_audio_codec_ctx = p_audio_ctx;
+void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
+    SDL_Log("audio_callback length = %d", length);
+    AVCodecContext *p_audio_codec_ctx = (AVCodecContext *) p_audio_ctx;
     int unused_data_length;  //还没用使用的audio_buffer数据长度
     int decode_audio_size;    //解码过的音频数据长度.
 
@@ -104,14 +105,17 @@ void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
 
     //如果大于0,则可以读音频数据
     while (length > 0) {
+        SDL_Log("audio_callback length > 0");
         //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
         if (audio_buffer_index >= audio_buffer_size) {
             decode_audio_size = audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
             //如果解码成功.
             if (decode_audio_size >= 0) {
+                SDL_Log("audio_decode_frame succeed.");
                 audio_buffer_size = decode_audio_size;
             } else {
                 //如果为空,就补上静默音
+                SDL_Log("audio_decode_frame fail  + memset.");
                 audio_buffer_size = 1024;
                 memset(audio_buffer, 0, audio_buffer_size);
             }
@@ -134,7 +138,6 @@ void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
         stream += unused_data_length;   //写入的对象需要先前移动
         audio_buffer_index += unused_data_length;   //使用过的index
     }
-
 }
 
 
@@ -294,6 +297,9 @@ int play_audio_video(char *video_path) {
     }
     SDL_Log("call avcodec_open2,get codec succeed. \n");
 
+    //alloc audio queue
+    packet_queue_init(&p_audio_queue);
+
     //alloc frame , 解码后的数据帧
     p_frame = av_frame_alloc();
 
@@ -318,6 +324,8 @@ int play_audio_video(char *video_path) {
             NULL);
     swr_init(p_swr_ctx);
 
+    //开始播放
+    SDL_PauseAudio(0);
 
     //4.create SDL windows /render / texture
     //get video size
@@ -419,69 +427,67 @@ int play_audio_video(char *video_path) {
                 SDL_RenderPresent(p_renderer);
 
                 av_free_packet(&packet);
-
-            } else if (packet.stream_index == audio_stream) {
-                //输入队列中.
-                insert_audio_packet_queue(&packet, &packet);
-            } else {
-                av_free_packet(&packet);
             }
-
-            SDL_Event event;
-            SDL_PollEvent(&event);
-            switch (event.type) {
-                case SDL_QUIT:
-                    goto __QUIT;
-                    break;
-                default:
-                    break;
-            }
+        } else if (packet.stream_index == audio_stream) {
+            //输入队列中.
+            insert_audio_packet_queue(&p_audio_queue, &packet);
+        } else {
+            av_free_packet(&packet);
         }
 
-
-        __QUIT:
-        read_frame_state = 0;  //这样会退出while循环
-
-        __FAIL:
-        //free frame data
-        if (p_frame) {
-            av_frame_free(&p_frame);
+        SDL_Event event;
+        SDL_PollEvent(&event);
+        switch (event.type) {
+            case SDL_QUIT:
+                quit = 1;
+                goto __QUIT;
+            default:
+                break;
         }
-
-        //free pict
-        if (p_picture_yuv) {
-            avpicture_free(p_picture_yuv);
-            free(p_picture_yuv);
-        }
-
-        //close codec
-        if (p_codec_ctx_origin) {
-            avcodec_close(p_codec_ctx_origin);
-        }
-        if (p_codec_ctx) {
-            avcodec_close(p_codec_ctx);
-        }
-
-        //close file
-        if (p_format_ctx) {
-            avformat_close_input(&p_format_ctx);
-        }
-
-        //destroy sdl
-        if (p_windows) {
-            SDL_DestroyWindow(p_windows);
-        }
-
-        if (p_renderer) {
-            SDL_DestroyRenderer(p_renderer);
-        }
-
-        if (p_texture) {
-            SDL_DestroyTexture(p_texture);
-        }
-
-        SDL_Quit();
-        return result;
     }
+
+    __QUIT:
+    read_frame_state = 0;  //这样会退出while循环
+
+    __FAIL:
+    //free frame data
+    if (p_frame) {
+        av_frame_free(&p_frame);
+    }
+
+    //free pict
+    if (p_picture_yuv) {
+        avpicture_free(p_picture_yuv);
+        free(p_picture_yuv);
+    }
+
+    //close codec
+    if (p_codec_ctx_origin) {
+        avcodec_close(p_codec_ctx_origin);
+    }
+    if (p_codec_ctx) {
+        avcodec_close(p_codec_ctx);
+    }
+
+    //close file
+    if (p_format_ctx) {
+        avformat_close_input(&p_format_ctx);
+    }
+
+    //destroy sdl
+    if (p_windows) {
+        SDL_DestroyWindow(p_windows);
+    }
+
+    if (p_renderer) {
+        SDL_DestroyRenderer(p_renderer);
+    }
+
+    if (p_texture) {
+        SDL_DestroyTexture(p_texture);
+    }
+
+    SDL_Quit();
+    return result;
 }
 

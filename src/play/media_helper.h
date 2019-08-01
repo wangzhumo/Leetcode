@@ -12,6 +12,16 @@
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 
+#define SDL_AUDIO_BUFFER_SIZE 1024
+#define MAX_AUDIO_FRAME_SIZE 192000
+#define MAX_AUDIOQ_SIZE (5 * 16 * 1024)
+#define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
+
+#define FF_REFRESH_EVENT (SDL_USEREVENT)
+#define FF_QUIT_EVENT (SDL_USEREVENT + 1)
+
+#define VIDEO_PICTURE_QUEUE_SIZE 1
+
 
 
 typedef struct PacketQueue {
@@ -22,7 +32,11 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-
+typedef struct VideoPicture {
+    AVPicture *pict;
+    int width, height; /* source height & width */
+    int allocated;
+} VideoPicture;
 
 
 typedef struct VideoState {
@@ -84,4 +98,4 @@ int insert_audio_packet_queue(PacketQueue *q, AVPacket *pkt);
 
 void packet_queue_init(PacketQueue *q);
 
-struct VideoState *global_video_state;
+VideoState *global_video_state;

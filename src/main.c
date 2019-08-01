@@ -4,8 +4,7 @@
 #include "play/player_audio_video.h"
 
 int main(int argc, char *args[]) {
-//    play_only_video("/Users/wangzhumo/Develop/Media/orginstory_sombra.mp4");
-//    play_audio_video("/Users/wangzhumo/Develop/Media/out_put.mp4");
-    play_audio_video("/Users/phyooos/Media/overwatch.mp4");
+    play_audio_video("/Users/wangzhumo/Develop/Media/orginstory_sombra.mp4");
+//    play_audio_video("/Users/phyooos/Media/overwatch.mp4");
     return 0;
 }

@@ -4,66 +4,9 @@
 
 #include "player_audio_video.h"
 
-#define SDL_AUDIO_BUFFER_SIZE 1024
-#define MAX_AUDIO_FRAME_SIZE 192000
-
 
 static struct SwrContext *p_swr_ctx = NULL;  //音频的上下文
 static int quit;
-
-/**
- * 播放设备的回调,调取数据
- * @param p_audio_ctx  AVCodecContext
- * @param stream 音频设备的buffer
- * @param length buffer可用的大小
- */
-void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
-
-    AVCodecContext *p_audio_codec_ctx = p_audio_ctx;
-    int unused_data_length;  //还没用使用的audio_buffer数据长度
-    int decode_audio_size;    //解码过的音频数据长度.
-
-    static uint8_t audio_buffer[(MAX_AUDIO_FRAME_SIZE * 3) / 12];
-    //实际上的audio_buffer长度,decode_audio_size可能为空,则填充buffer的就是静默音
-    static unsigned int audio_buffer_size = 0;
-    //当前已经被使用过的index
-    static unsigned int audio_buffer_index = 0;
-
-    //如果大于0,则可以读音频数据
-    while (length > 0) {
-        //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
-        if (audio_buffer_index >= audio_buffer_size) {
-            decode_audio_size = audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
-            //如果解码成功.
-            if (decode_audio_size >= 0) {
-                audio_buffer_size = decode_audio_size;
-            } else {
-                //如果为空,就补上静默音
-                audio_buffer_size = 1024;
-                memset(audio_buffer, 0, audio_buffer_size);
-            }
-            //读取到数据,则应该把已使用数据的index置为 0
-            audio_buffer_index = 0;
-        }
-        //计算整个可用解码数据的长度
-        unused_data_length = audio_buffer_size - audio_buffer_index;
-        if (unused_data_length > length) {
-            unused_data_length = length;
-        }
-        //copy audio buffer
-        /*
-         * dest  要写入的对象
-         * data  写入数据
-         * length  写入数据长度
-         */
-        memcpy(stream, audio_buffer + audio_buffer_index, unused_data_length);
-        length = length - unused_data_length;  //剩余容量 = 总容量 - 已使用长度
-        stream += unused_data_length;   //写入的对象需要先前移动
-        audio_buffer_index += unused_data_length;   //使用过的index
-    }
-
-}
-
 
 /**
  * 封装解码音频数据
@@ -139,6 +82,59 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
         audio_package_data = av_packet.data;
         audio_package_size = av_packet.size;
     }
+}
+
+/**
+ * 播放设备的回调,调取数据
+ * @param p_audio_ctx  AVCodecContext
+ * @param stream 音频设备的buffer
+ * @param length buffer可用的大小
+ */
+void audio_callback(AVCodecContext *p_audio_ctx, Uint8 *stream, int length) {
+
+    AVCodecContext *p_audio_codec_ctx = p_audio_ctx;
+    int unused_data_length;  //还没用使用的audio_buffer数据长度
+    int decode_audio_size;    //解码过的音频数据长度.
+
+    static uint8_t audio_buffer[(MAX_AUDIO_FRAME_SIZE * 3) / 12];
+    //实际上的audio_buffer长度,decode_audio_size可能为空,则填充buffer的就是静默音
+    static unsigned int audio_buffer_size = 0;
+    //当前已经被使用过的index
+    static unsigned int audio_buffer_index = 0;
+
+    //如果大于0,则可以读音频数据
+    while (length > 0) {
+        //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
+        if (audio_buffer_index >= audio_buffer_size) {
+            decode_audio_size = audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
+            //如果解码成功.
+            if (decode_audio_size >= 0) {
+                audio_buffer_size = decode_audio_size;
+            } else {
+                //如果为空,就补上静默音
+                audio_buffer_size = 1024;
+                memset(audio_buffer, 0, audio_buffer_size);
+            }
+            //读取到数据,则应该把已使用数据的index置为 0
+            audio_buffer_index = 0;
+        }
+        //计算整个可用解码数据的长度
+        unused_data_length = audio_buffer_size - audio_buffer_index;
+        if (unused_data_length > length) {
+            unused_data_length = length;
+        }
+        //copy audio buffer
+        /*
+         * dest  要写入的对象
+         * data  写入数据
+         * length  写入数据长度
+         */
+        memcpy(stream, audio_buffer + audio_buffer_index, unused_data_length);
+        length = length - unused_data_length;  //剩余容量 = 总容量 - 已使用长度
+        stream += unused_data_length;   //写入的对象需要先前移动
+        audio_buffer_index += unused_data_length;   //使用过的index
+    }
+
 }
 
 

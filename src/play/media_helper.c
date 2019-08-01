@@ -24,7 +24,7 @@ void packet_queue_init(PacketQueue *q) {
  */
 int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt) {
     AVPacketList *pkt;
-    if (av_dup_packet(in_pkt) < 0) {   //引用计数 +1
+    if (av_dup_packet(in_pkt) < 0) {        //引用计数 +1
         return -1;
     }
     pkt = av_malloc(sizeof(AVPacketList));  // 为pkt1分配一个空间
@@ -34,20 +34,20 @@ int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt) {
     pkt->pkt = *in_pkt;     //传入的packet赋值给 pkt
     pkt->next = NULL;       //是队列的最后一个,他之后没有元素
 
-    SDL_LockMutex(p_packet_queue->mutex);    //加入锁.
+    SDL_LockMutex(p_packet_queue->mutex);        //加入锁.
 
-    if (!p_packet_queue->last_pkt) {      //如果队列最后一个元素为空,则把自己置为第一个元素
+    if (!p_packet_queue->last_pkt) {             //如果队列最后一个元素为空,则把自己置为第一个元素
         p_packet_queue->first_pkt = pkt;
     } else {
-        p_packet_queue->last_pkt->next = pkt;   //队列不为空,则把自己放在最后一个元素 -> next 上
+        p_packet_queue->last_pkt->next = pkt;    //队列不为空,则把自己放在最后一个元素 -> next 上
     }
-    p_packet_queue->last_pkt = pkt;    //计算其他队列信息
+    p_packet_queue->last_pkt = pkt;              //计算其他队列信息
     p_packet_queue->nb_packets++;
     p_packet_queue->size += pkt->pkt.size;
 
-    SDL_CondSignal(p_packet_queue->cond);   //告知等待获取元素的线程,可以取数据了.   解锁->发信号->加锁
+    SDL_CondSignal(p_packet_queue->cond);        //告知等待获取元素的线程,可以取数据了.   解锁->发信号->加锁
 
-    SDL_UnlockMutex(p_packet_queue->mutex);  //插入完毕,释放锁.
+    SDL_UnlockMutex(p_packet_queue->mutex);      //插入完毕,释放锁.
     return 0;
 }
 
@@ -89,7 +89,7 @@ int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt, 
             break;
         } else {
             fprintf(stderr, "queue is empty, so wait a moment and wait a cond signal\n");
-            SDL_CondWait(p_packet_queue->cond, p_packet_queue->mutex);
+            SDL_CondWait(p_packet_queue->cond, p_packet_queue->mutex);  //等待信号
         }
     }
     SDL_UnlockMutex(p_packet_queue->mutex);         //解🔐

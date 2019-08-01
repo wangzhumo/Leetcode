@@ -25,11 +25,11 @@
 
 
 typedef struct PacketQueue {
-    AVPacketList *first_pkt, *last_pkt;
-    int nb_packets;
-    int size;
-    SDL_mutex *mutex;
-    SDL_cond *cond;
+    AVPacketList *first_pkt, *last_pkt;   //FFmpeg提供，单链表，其中 next -> 指向下一个元素
+    int nb_packets;  //packet 的数量
+    int size;   //size 总的大小
+    SDL_mutex *mutex;   //互斥，用于加锁
+    SDL_cond *cond;   //处理同步使用
 } PacketQueue;
 
 typedef struct VideoPicture {
@@ -81,3 +81,9 @@ typedef struct VideoState {
 
 
 void packet_queue_init(PacketQueue *q);
+
+int select_audio_packet_queue(PacketQueue *q, AVPacket *pkt,int block);
+
+int insert_audio_packet_queue(PacketQueue *q, AVPacket *pkt);
+
+static VideoState global_video_state;

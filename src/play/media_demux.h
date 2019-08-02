@@ -6,6 +6,11 @@
 #define MEDIA_MEDIA_DEMUX_H
 
 #endif //MEDIA_MEDIA_DEMUX_H
-
+#include <SDL.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libavutil/avstring.h>
+#include <libswresample/swresample.h>
 
 int play2(char *path);

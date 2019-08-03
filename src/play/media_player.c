@@ -33,17 +33,22 @@ int play(char *path) {
             SDL_WINDOW_RESIZABLE
     );
 
-    if(!p_sdl_window) {
+    if (!p_sdl_window) {
         fprintf(stderr, "SDL: could not set video mode:%s - exiting.\n", SDL_GetError());
         exit(1);
     }
 
     //create renderer
     p_sdl_renderer = SDL_CreateRenderer(p_sdl_window, -1, 0);
-    if(!p_sdl_renderer) {
+    if (!p_sdl_renderer) {
         fprintf(stderr, "SDL: could not create renderer.\n");
         exit(1);
     }
 
+    //创建线程锁，创建信号量
+    state->picture_queue_mutex = SDL_CreateMutex();
+    state->picture_queue_cond = SDL_CreateCond();
+
+    state->parse_demux_tid = SDL_CreateThread()
 
 }

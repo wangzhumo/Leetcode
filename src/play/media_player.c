@@ -4,6 +4,18 @@
 
 #include "media_player.h"
 
+static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque) {
+    SDL_Event event;
+    event.type = FF_REFRESH_EVENT;
+    event.user.data1 = opaque;
+    SDL_PushEvent(&event);
+    return 0; /* 0 means stop timer */
+}
+
+/* schedule a video refresh in 'delay' ms */
+static void schedule_refresh(VideoState *is, Uint32 delay) {
+    SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
+}
 
 int play(char *path) {
 
@@ -12,9 +24,11 @@ int play(char *path) {
     SDL_Window *p_sdl_window;
     SDL_Renderer *p_sdl_renderer;
     SDL_Texture *p_sdl_texture;
+    SDL_mutex *p_text_mutex;
 
     //init VideoState
     state = av_malloc(sizeof(VideoState));
+    //copy file path
     av_strlcpy(state->filename, path, sizeof(state->filename));
     //register all
     av_register_all();
@@ -44,11 +58,39 @@ int play(char *path) {
         fprintf(stderr, "SDL: could not create renderer.\n");
         exit(1);
     }
+    //创建texture的锁
+    p_text_mutex = SDL_CreateMutex();
 
     //创建线程锁，创建信号量
     state->picture_queue_mutex = SDL_CreateMutex();
     state->picture_queue_cond = SDL_CreateCond();
 
-    state->parse_demux_tid = SDL_CreateThread()
+    //create timer,每40毫秒发送一次
+    // SDL_PushEvent(&event);    state 为参数
+    schedule_refresh(state, 40);  //定时去渲染视频信息.
 
+    //创建一个解复用线程.
+    state->parse_demux_tid = SDL_CreateThread(NULL, "demux_thread", state);
+    if (!state->parse_demux_tid){
+        //创建失败就退出.
+        av_free(state);
+        goto __FAIL;
+    }
+
+    __FAIL:
+    //destroy sdl
+    if (p_sdl_window) {
+        SDL_DestroyWindow(p_sdl_window);
+    }
+
+    if (p_sdl_renderer) {
+        SDL_DestroyRenderer(p_sdl_renderer);
+    }
+
+    if (p_sdl_texture) {
+        SDL_DestroyTexture(p_sdl_texture);
+    }
+
+    SDL_Quit();
 }
+

@@ -119,7 +119,7 @@ int stream_component_open(VideoState *state, int stream_index) {
                 NULL,
                 "video_decode_thread",
                 state);
-        //视频重采样.
+        //视频裁剪.
         state->video_sws_ctx = sws_getContext(
                 state->video_ctx->width,
                 state->video_ctx->height,
@@ -132,8 +132,8 @@ int stream_component_open(VideoState *state, int stream_index) {
                 NULL,
                 NULL
         );
-
     }
+    return 0;
 }
 
 

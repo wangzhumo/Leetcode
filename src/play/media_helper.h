@@ -93,4 +93,10 @@ int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt,i
 
 int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt);
 
+int open_audio_devices(AVCodecContext *p_codec_ctx,
+                       SDL_AudioSpec *wanted_spec,
+                       SDL_AudioSpec *spec,
+                       void *user_data,
+                       SDL_AudioCallback callback);
+
 static VideoState global_video_state;

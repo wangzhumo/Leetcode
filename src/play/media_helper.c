@@ -2,6 +2,7 @@
 // Created by 王诛魔 on 2019/8/1.
 //
 
+#include <tkDecls.h>
 #include "media_helper.h"
 
 
@@ -94,4 +95,35 @@ int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt, 
     }
     SDL_UnlockMutex(p_packet_queue->mutex);         //解🔐
     return ret;
+}
+
+
+/**
+ * 打开音频设备.
+ * @param p_codec_ctx
+ * @param output_spec
+ * @param input_spec
+ * @return error -1
+ */
+int open_audio_devices(AVCodecContext *p_codec_ctx,
+                       SDL_AudioSpec *wanted_spec,
+                       SDL_AudioSpec *spec,
+                       void *user_data,
+                       SDL_AudioCallback callback){
+    if (p_codec_ctx->codec_type == AVMEDIA_TYPE_AUDIO){
+        wanted_spec->freq = p_codec_ctx->sample_rate;
+        wanted_spec->format = AUDIO_S16SYS;
+        wanted_spec->channels = p_codec_ctx->channels;
+        wanted_spec->samples = SDL_AUDIO_BUFFER_SIZE;
+        wanted_spec->silence = 0;
+        wanted_spec->userdata = user_data;
+        wanted_spec->callback = callback;
+        //open devices
+        if (SDL_OpenAudio(wanted_spec, spec) < 0) {
+            fprintf(stderr, "SDL_OpenAudio fail %s. \n", SDL_GetError());
+            return -1;
+        }
+        return 0;
+    }
+    return -1;
 }

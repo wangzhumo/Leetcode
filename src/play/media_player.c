@@ -216,7 +216,7 @@ int play(char *path) {
     SDL_Texture *p_sdl_texture;
     SDL_mutex *p_text_mutex;
     Uint32 pixel_format;   //YUV的编码格式
-    AVPacket packet;
+    AVPacket packet, *p_packet = &packet;
 
     //**init VideoState
     state = av_malloc(sizeof(VideoState));
@@ -287,7 +287,7 @@ int play(char *path) {
         }
 
         //读取媒体流的frame - packet
-        if (av_read_frame(state->pFormatCtx, &packet) < 0) {
+        if (av_read_frame(state->pFormatCtx, p_packet) < 0) {
             if (state->pFormatCtx->pb->error == 0) {
                 SDL_Delay(100);   //这表示不是错误,需要等待输入
                 continue;
@@ -297,15 +297,27 @@ int play(char *path) {
         }
 
         //如果以上都OK,把解封装的packet放入到queue中去
-        if (packet.stream_index == state->videoIndex) {
+        if (p_packet->stream_index == state->videoIndex) {
             //音频数据
-            insert_packet_queue(&state->video_queue, &packet);
-            fprintf(stderr,"insert_packet_queue");
+            insert_packet_queue(&state->video_queue, p_packet);
+            fprintf(stderr, "insert_packet_queue,video size = %d \n", state->video_queue.nb_packets);
+        } else if (p_packet->stream_index == state->audioIndex) {
+            //音频数据
+            insert_packet_queue(&state->audio_queue, p_packet);
+            fprintf(stderr, "insert_packet_queue,audio size = %d \n", state->audio_queue.nb_packets);
+        } else {
+            av_packet_free(p_packet);
         }
     }
 
 
     __FAIL:
+    //quit
+    SDL_Event event1;
+    event1.type = FF_QUIT_EVENT;
+    event1.user.data1 = state;
+    SDL_PushEvent(&event1);
+
     //destroy sdl
     if (p_sdl_window) {
         SDL_DestroyWindow(p_sdl_window);

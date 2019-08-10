@@ -17,6 +17,60 @@ static void schedule_refresh(VideoState *is, Uint32 delay) {
     SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
 }
 
+/**
+ * 解复用线程
+ * @param args VideoState
+ */
+int demux_thread(void *args){
+
+    VideoState *videoState = (VideoState *)args;
+    AVFormatContext *p_format_ctx = NULL;   //解码文件
+
+    int video_stream = -1;
+    int audio_stream = -1;
+
+
+
+    //1.open file
+    if (avformat_open_input(&p_format_ctx, videoState->filename, NULL, NULL) != 0) {
+        fprintf(stderr, "Failed to Open Video File %s \n", videoState->filename);
+        return -1;
+    }
+    videoState->pFormatCtx = p_format_ctx;
+
+    //2.read file info -> dump
+    if (avformat_find_stream_info(p_format_ctx, NULL) < 0) {
+        fprintf(stderr, "Failed find video stream info.");
+        return -1;
+    }
+
+    av_dump_format(p_format_ctx, 0, videoState->filename, 0);
+    SDL_Log("call av_dump_format end. \n");
+
+    //3.find media stream
+    for (size_t i = 0; i < p_format_ctx->nb_streams; i++) {
+        if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                video_stream < 0) { //AVMediaType -> AVMEDIA_TYPE_VIDEO{
+            //find video stream
+            video_stream = i;
+
+        } else if (p_format_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                audio_stream < 0){
+            //find audio stream
+            audio_stream = i;
+        }
+    }
+
+
+    if (video_stream == -1  || audio_stream == -1) {
+        fprintf(stderr, "Failed find video/audio stream info.");
+        return -1;
+    }
+    SDL_Log("find video stream succeed. \n");
+
+}
+
+
 int play(char *path) {
 
     SDL_Event event;

@@ -4,14 +4,16 @@
 #ifndef MEDIA_MEDIA_HELPER_H
 #define MEDIA_MEDIA_HELPER_H
 
-#endif //MEDIA_MEDIA_HELPER_H
-
 #include <SDL.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avstring.h>
 #include <libswresample/swresample.h>
+
+#endif //MEDIA_MEDIA_HELPER_H
+
+
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
 #define MAX_AUDIO_FRAME_SIZE 192000

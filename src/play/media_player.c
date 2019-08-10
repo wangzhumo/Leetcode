@@ -102,7 +102,8 @@ int stream_component_open(VideoState *state, int stream_index) {
 
         fprintf(stderr,
                 "swr opts: out_channel_layout:%lld, out_sample_fmt:%d, out_sample_rate:%d, in_channel_layout:%lld, in_sample_fmt:%d, in_sample_rate:%d",
-                out_channel_layout, AV_SAMPLE_FMT_S16, state->audio_ctx->sample_rate, in_channel_layout, state->audio_ctx->sample_fmt,
+                out_channel_layout, AV_SAMPLE_FMT_S16, state->audio_ctx->sample_rate, in_channel_layout,
+                state->audio_ctx->sample_fmt,
                 state->audio_ctx->sample_rate);
 
         swr_init(state->audio_swr_ctx);
@@ -184,15 +185,17 @@ int demux_thread(void *args) {
     videoState->videoIndex = video_stream;
     videoState->audioIndex = audio_stream;
 
-    if (video_stream == -1 || audio_stream == -1) {
+
+
+    //4.open video/audio stream
+    stream_component_open(videoState, video_stream);  //set videoState->videoIndex
+    stream_component_open(videoState, audio_stream);  //set videoState->audioIndex
+
+    if (videoState->videoIndex == -1 || videoState->audioIndex == -1) {
         fprintf(stderr, "Failed find video/audio stream info.\n");
         goto __ERROR;
     }
     SDL_Log("find video stream succeed. \n");
-
-    //4.open video/audio stream
-    stream_component_open(videoState, video_stream);
-    stream_component_open(videoState, audio_stream);
 
 
     __ERROR:
@@ -212,8 +215,10 @@ int play(char *path) {
     SDL_Renderer *p_sdl_renderer;
     SDL_Texture *p_sdl_texture;
     SDL_mutex *p_text_mutex;
+    Uint32 pixel_format;   //YUV的编码格式
+    AVPacket packet;
 
-    //init VideoState
+    //**init VideoState
     state = av_malloc(sizeof(VideoState));
     //copy file path
     av_strlcpy(state->filename, path, sizeof(state->filename));
@@ -226,7 +231,23 @@ int play(char *path) {
         exit(1);
     }
 
-    //create window
+    //**创建线程锁，创建信号量
+    state->picture_queue_mutex = SDL_CreateMutex();
+    state->picture_queue_cond = SDL_CreateCond();
+
+    //**create timer,每40毫秒发送一次
+    // SDL_PushEvent(&event);    state 为参数
+    schedule_refresh(state, 40);  //定时去渲染视频信息.
+
+    //**创建一个解复用线程.
+    state->parse_demux_tid = SDL_CreateThread(NULL, "demux_thread", state);
+    if (!state->parse_demux_tid) {
+        //创建失败就退出.
+        av_free(state);
+        goto __FAIL;
+    }
+
+    //**create window
     p_sdl_window = SDL_CreateWindow(
             "Wangzhumo's Player",
             0, 0,
@@ -239,30 +260,50 @@ int play(char *path) {
         exit(1);
     }
 
-    //create renderer
+    //**create renderer
     p_sdl_renderer = SDL_CreateRenderer(p_sdl_window, -1, 0);
     if (!p_sdl_renderer) {
         fprintf(stderr, "SDL: could not create renderer.\n");
         exit(1);
     }
+
+    //**create texture
+    pixel_format = SDL_PIXELFORMAT_IYUV;
     //创建texture的锁
     p_text_mutex = SDL_CreateMutex();
 
-    //创建线程锁，创建信号量
-    state->picture_queue_mutex = SDL_CreateMutex();
-    state->picture_queue_cond = SDL_CreateCond();
+    p_sdl_texture = SDL_CreateTexture(
+            p_sdl_renderer,
+            pixel_format,
+            SDL_TEXTUREACCESS_STREAMING,
+            state->video_ctx->width,
+            state->video_ctx->height);
 
-    //create timer,每40毫秒发送一次
-    // SDL_PushEvent(&event);    state 为参数
-    schedule_refresh(state, 40);  //定时去渲染视频信息.
+    for (;;) {
+        if (state->quit) {
+            SDL_CondSignal(state->video_queue.cond);
+            SDL_CondSignal(state->audio_queue.cond);
+            break;
+        }
 
-    //创建一个解复用线程.
-    state->parse_demux_tid = SDL_CreateThread(NULL, "demux_thread", state);
-    if (!state->parse_demux_tid) {
-        //创建失败就退出.
-        av_free(state);
-        goto __FAIL;
+        //读取媒体流的frame - packet
+        if (av_read_frame(state->pFormatCtx, &packet) < 0) {
+            if (state->pFormatCtx->pb->error == 0) {
+                SDL_Delay(100);   //这表示不是错误,需要等待输入
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        //如果以上都OK,把解封装的packet放入到queue中去
+        if (packet.stream_index == state->videoIndex) {
+            //音频数据
+            insert_packet_queue(&state->video_queue, &packet);
+            fprintf(stderr,"insert_packet_queue");
+        }
     }
+
 
     __FAIL:
     //destroy sdl

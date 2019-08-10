@@ -74,7 +74,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
         }
 
         //继续取数据
-        if (select_audio_packet_queue(&p_audio_queue, &av_packet, 1) < 0) {
+        if (select_packet_queue(&p_audio_queue, &av_packet, 1) < 0) {
             //取不到数据,则退出
             return -1;
         }
@@ -426,7 +426,7 @@ int play_audio_video(char *video_path) {
             }
         } else if (packet.stream_index == audio_stream) {
             //输入队列中.
-            insert_audio_packet_queue(&p_audio_queue, &packet);
+            insert_packet_queue(&p_audio_queue, &packet);
         } else {
             av_free_packet(&packet);
         }

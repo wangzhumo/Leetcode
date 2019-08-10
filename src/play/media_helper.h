@@ -89,9 +89,9 @@ typedef struct VideoState {
 
 void packet_queue_init(PacketQueue *q);
 
-int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt,int block);
+int select_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt, int block);
 
-int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt);
+int insert_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt);
 
 int open_audio_devices(AVCodecContext *p_codec_ctx,
                        SDL_AudioSpec *wanted_spec,

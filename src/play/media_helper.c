@@ -23,7 +23,7 @@ void packet_queue_init(PacketQueue *q) {
  * @param in_pkt
  * @return
  */
-int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt) {
+int insert_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt) {
     AVPacketList *pkt;
     if (av_dup_packet(in_pkt) < 0) {        //引用计数 +1
         return -1;
@@ -60,7 +60,7 @@ int insert_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *in_pkt) {
  * @param block
  * @return
  */
-int select_audio_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt, int block) {
+int select_packet_queue(PacketQueue *p_packet_queue, AVPacket *p_out_pkt, int block) {
     AVPacketList *temp_packet;
     int ret;
 

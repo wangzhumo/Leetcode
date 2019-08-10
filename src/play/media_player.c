@@ -240,7 +240,7 @@ int play(char *path) {
     schedule_refresh(state, 40);  //定时去渲染视频信息.
 
     //**创建一个解复用线程.
-    state->parse_demux_tid = SDL_CreateThread(NULL, "demux_thread", state);
+    state->parse_demux_tid = SDL_CreateThread(demux_thread, "demux_thread", state);
     if (!state->parse_demux_tid) {
         //创建失败就退出.
         av_free(state);

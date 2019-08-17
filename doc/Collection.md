@@ -37,3 +37,14 @@ android端基于FFmpeg实现音频剪切、拼接、转码、混音、编解码�
 🏷:`FFmpeg`
 
 FFmpeg for Android, iOS and tvOS
+
+
+
+#### **FFmpegAndroid**
+
+🔗:<https://github.com/WangShuo1143368701/FFmpegAndroid>
+
+🏷:`ffmpeg`,`Cmake`
+
+CMake方式移植到Android中,并实现编解码，转码，推拉流，滤镜等
+

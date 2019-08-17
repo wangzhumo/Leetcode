@@ -27,3 +27,13 @@ android端基于FFmpeg实现音频剪切、拼接、转码、混音、编解码�
 🏷:`NDK`,`FFmpeg`,`OpenSL`, `OpenGL`, `Mediacodec`
 
 学习ffmpeg解码流程和Android中NDK实战开发
+
+
+
+#### **mobile-ffmpeg**
+
+🔗:<https://github.com/tanersener/mobile-ffmpeg>
+
+🏷:`FFmpeg`
+
+FFmpeg for Android, iOS and tvOS

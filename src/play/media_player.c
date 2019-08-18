@@ -28,6 +28,44 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
 }
 
 /**
+ * 视频解码线程
+ * @param args
+ * @return int
+ */
+int decode_video_thread(void *args){
+
+    VideoState *state = (VideoState *) args;
+    AVPacket pkg1, *p_packet = &pkg1;
+    int frameFinished;
+    AVFrame *p_frame = NULL;
+
+    //开辟一个frame
+    p_frame = av_frame_alloc();
+
+    //获取视屏解封装的packet
+    for (;;){
+        //get packet from video_queue
+        if (select_packet_queue(&state->video_queue,p_packet,1) < 0){
+            //不需要继续解码了
+            break;
+        }
+        //否则,开始解码 p_packet 中的数据
+        /*
+         * @param         codec context
+         * @param[out]    picture The AVFrame in which the decoded video frame will be stored.
+         * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
+         */
+        avcodec_decode_video2(state->video_ctx, p_frame, &frameFinished, p_packet);
+
+        //got_picture_ptr 为 0,说明没有要解码的数据了.
+        if (frameFinished){
+
+        }
+
+    }
+}
+
+/**
  * 打开指定的媒体流
  * @param state
  * @param stream_index

@@ -16,6 +16,93 @@ void packet_queue_init(PacketQueue *q) {
     q->cond = SDL_CreateCond();
 }
 
+void alloc_picture(void *userdata) {
+
+    int ret;
+
+    VideoState *is = (VideoState *)userdata;
+    VideoPicture *vp;
+
+    vp = &is->picture_queue[is->picture_queue_windex];
+    if(vp->picture) {
+
+        // we already have one make another, bigger/smaller
+        avpicture_free(vp->picture);
+        free(vp->picture);
+
+        vp->picture = NULL;
+    }
+
+    // Allocate a place to put our YUV image on that screen
+    SDL_LockMutex(is->picture_queue_mutex);
+
+    vp->bmp = (AVPicture*)malloc(sizeof(AVPicture));
+    ret = avpicture_alloc(vp->bmp, AV_PIX_FMT_YUV420P, is->video_ctx->width, is->video_ctx->height);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate temporary picture: %s\n", av_err2str(ret));
+    }
+
+    SDL_UnlockMutex(text_mutex);
+
+    vp->width = is->video_ctx->width;
+    vp->height = is->video_ctx->height;
+    vp->allocated = 1;
+
+}
+
+
+int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
+
+    VideoPicture *vp;
+
+    /* wait until we have space for a new pic */
+    SDL_LockMutex(is->picture_queue_mutex);
+    while (is->picture_queue_size >= VIDEO_PICTURE_QUEUE_SIZE &&
+           !is->quit) {
+        SDL_CondWait(is->picture_queue_cond, is->picture_queue_mutex);
+    }
+    SDL_UnlockMutex(is->picture_queue_mutex);
+
+    if (is->quit)
+        return -1;
+
+    // windex is set to 0 initially
+    vp = &is->picture_queue[is->picture_queue_windex];
+
+    /* allocate or resize the buffer! */
+    if (!vp->picture ||
+        vp->width != is->video_ctx->width ||
+        vp->height != is->video_ctx->height) {
+
+        vp->allocated = 0;
+        alloc_picture(is);
+        if (is->quit) {
+            return -1;
+        }
+    }
+
+    /* We have a place to put our picture on the queue */
+    if (vp->bmp) {
+
+        vp->pts = pts;
+
+        // Convert the image into YUV format that SDL uses
+        sws_scale(is->video_sws_ctx, (uint8_t const *const *) pFrame->data,
+                  pFrame->linesize, 0, is->video_ctx->height,
+                  vp->bmp->data, vp->bmp->linesize);
+
+        /* now we inform our display thread that we have a pic ready */
+        if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE) {
+            is->pictq_windex = 0;
+        }
+
+        SDL_LockMutex(is->pictq_mutex);
+        is->pictq_size++;
+        SDL_UnlockMutex(is->pictq_mutex);
+    }
+    return 0;
+
+}
 
 /**
  * 给队列中存入数据

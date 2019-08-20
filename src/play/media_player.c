@@ -32,7 +32,7 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
  * @param args
  * @return int
  */
-int decode_video_thread(void *args){
+int decode_video_thread(void *args) {
 
     VideoState *state = (VideoState *) args;
     AVPacket pkg1, *p_packet = &pkg1;
@@ -43,9 +43,9 @@ int decode_video_thread(void *args){
     p_frame = av_frame_alloc();
 
     //获取视屏解封装的packet
-    for (;;){
+    for (;;) {
         //get packet from video_queue
-        if (select_packet_queue(&state->video_queue,p_packet,1) < 0){
+        if (select_packet_queue(&state->video_queue, p_packet, 1) < 0) {
             //不需要继续解码了
             break;
         }
@@ -58,11 +58,16 @@ int decode_video_thread(void *args){
         avcodec_decode_video2(state->video_ctx, p_frame, &frameFinished, p_packet);
 
         //got_picture_ptr 为 0,说明没有要解码的数据了.
-        if (frameFinished){
-
+        if (frameFinished) {
+            //有解码后的数据,则放到queue_picture中去
+            if (queue_picture(state, p_frame, 0) < 0) {
+                break;
+            }
         }
-
+        av_free_packet(p_packet);
     }
+    av_frame_free(&p_frame);
+    return 0;
 }
 
 /**
@@ -223,8 +228,6 @@ int demux_thread(void *args) {
     videoState->videoIndex = video_stream;
     videoState->audioIndex = audio_stream;
 
-
-
     //4.open video/audio stream
     stream_component_open(videoState, video_stream);  //set videoState->videoIndex
     stream_component_open(videoState, audio_stream);  //set videoState->audioIndex
@@ -249,10 +252,6 @@ int play(char *path) {
 
     SDL_Event event;
     VideoState *state = NULL;
-    SDL_Window *p_sdl_window;
-    SDL_Renderer *p_sdl_renderer;
-    SDL_Texture *p_sdl_texture;
-    SDL_mutex *p_text_mutex;
     Uint32 pixel_format;   //YUV的编码格式
     AVPacket packet, *p_packet = &packet;
 
@@ -286,20 +285,20 @@ int play(char *path) {
     }
 
     //**create window
-    p_sdl_window = SDL_CreateWindow(
+    p_sdl_windows = SDL_CreateWindow(
             "Wangzhumo's Player",
             0, 0,
             640, 480,
             SDL_WINDOW_RESIZABLE
     );
 
-    if (!p_sdl_window) {
+    if (!p_sdl_windows) {
         fprintf(stderr, "SDL: could not set video mode:%s - exiting.\n", SDL_GetError());
         exit(1);
     }
 
     //**create renderer
-    p_sdl_renderer = SDL_CreateRenderer(p_sdl_window, -1, 0);
+    p_sdl_renderer = SDL_CreateRenderer(p_sdl_windows, -1, 0);
     if (!p_sdl_renderer) {
         fprintf(stderr, "SDL: could not create renderer.\n");
         exit(1);
@@ -308,7 +307,7 @@ int play(char *path) {
     //**create texture
     pixel_format = SDL_PIXELFORMAT_IYUV;
     //创建texture的锁
-    p_text_mutex = SDL_CreateMutex();
+    p_texture_mutex = SDL_CreateMutex();
 
     p_sdl_texture = SDL_CreateTexture(
             p_sdl_renderer,
@@ -357,8 +356,8 @@ int play(char *path) {
     SDL_PushEvent(&event1);
 
     //destroy sdl
-    if (p_sdl_window) {
-        SDL_DestroyWindow(p_sdl_window);
+    if (p_sdl_windows) {
+        SDL_DestroyWindow(p_sdl_windows);
     }
 
     if (p_sdl_renderer) {

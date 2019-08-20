@@ -36,8 +36,8 @@ void alloc_picture(void *userdata) {
     // Allocate a place to put our YUV image on that screen
     SDL_LockMutex(is->picture_queue_mutex);
 
-    vp->bmp = (AVPicture*)malloc(sizeof(AVPicture));
-    ret = avpicture_alloc(vp->bmp, AV_PIX_FMT_YUV420P, is->video_ctx->width, is->video_ctx->height);
+    vp->picture = (AVPicture*)malloc(sizeof(AVPicture));
+    ret = avpicture_alloc(vp->picture, AV_PIX_FMT_YUV420P, is->video_ctx->width, is->video_ctx->height);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate temporary picture: %s\n", av_err2str(ret));
     }
@@ -50,7 +50,13 @@ void alloc_picture(void *userdata) {
 
 }
 
-
+/**
+ * picture的队列(已经解码完毕)
+ * @param is
+ * @param pFrame
+ * @param pts
+ * @return
+ */
 int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
     VideoPicture *vp;
@@ -82,23 +88,23 @@ int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
     }
 
     /* We have a place to put our picture on the queue */
-    if (vp->bmp) {
+    if (vp->picture) {
 
         vp->pts = pts;
 
         // Convert the image into YUV format that SDL uses
         sws_scale(is->video_sws_ctx, (uint8_t const *const *) pFrame->data,
                   pFrame->linesize, 0, is->video_ctx->height,
-                  vp->bmp->data, vp->bmp->linesize);
+                  vp->picture->data, vp->picture->linesize);
 
         /* now we inform our display thread that we have a pic ready */
-        if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE) {
-            is->pictq_windex = 0;
+        if (++is->picture_queue_windex == VIDEO_PICTURE_QUEUE_SIZE) {
+            is->picture_queue_windex = 0;
         }
 
-        SDL_LockMutex(is->pictq_mutex);
-        is->pictq_size++;
-        SDL_UnlockMutex(is->pictq_mutex);
+        SDL_LockMutex(is->picture_queue_mutex);
+        is->picture_queue_size++;
+        SDL_UnlockMutex(is->picture_queue_mutex);
     }
     return 0;
 

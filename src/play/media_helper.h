@@ -25,6 +25,10 @@
 
 #define VIDEO_PICTURE_QUEUE_SIZE 1
 
+SDL_mutex    *p_texture_mutex;
+SDL_Window   *p_sdl_windows = NULL;
+SDL_Renderer *p_sdl_renderer;
+SDL_Texture  *p_sdl_texture;
 
 
 typedef struct PacketQueue {
@@ -39,6 +43,7 @@ typedef struct VideoPicture {
     AVPicture *picture;
     int width, height; /* source height & width */
     int allocated;
+    double pts;
 } VideoPicture;
 
 /**
@@ -98,5 +103,9 @@ int open_audio_devices(AVCodecContext *p_codec_ctx,
                        SDL_AudioSpec *spec,
                        void *user_data,
                        SDL_AudioCallback callback);
+
+void alloc_picture(void *userdata);
+
+int queue_picture(VideoState *is, AVFrame *pFrame, double pts);
 
 static VideoState global_video_state;

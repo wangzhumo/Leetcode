@@ -25,7 +25,7 @@ static void schedule_refresh(VideoState *is, Uint32 delay) {
  * @param i  大小
  * @return
  */
-int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_size) {
+int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_size,double *pts_ptr) {
 
     AVPacket *p_av_packet = &state->audio_packet;
 
@@ -34,6 +34,7 @@ int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_s
     int decode_length;   //解码的长度
     int data_size;
     double pts;
+    int n;
 
 
     //这样,while第一次不会被执行到
@@ -79,25 +80,35 @@ int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_s
             }
 
             //此时.
-            pts = state->audio_packet_data
+            pts = state->audio_clock;
+            *pts_ptr = pts;
+
+            n = 2 * state->audio_ctx->channels;
+            state->audio_clock += data_size / (double)(n * state->audio_ctx->sample_rate);
+            return data_size;
         }
 
-        if (av_packet.data) {
-            av_free_packet(&av_packet);
+        if (p_av_packet->data) {
+            av_free_packet(p_av_packet);
         }
-        if (global_video_state.quit) {
+        if (state->quit) {
             return -1;
         }
 
         //继续取数据
-        if (select_packet_queue(&p_audio_queue, &av_packet, 1) < 0) {
+        if (select_packet_queue(&state->audio_queue, p_av_packet, 1) < 0) {
             //取不到数据,则退出
             return -1;
         }
 
         //赋值
-        audio_package_data = av_packet.data;
-        audio_package_size = av_packet.size;
+        state->audio_packet_data = p_av_packet->data;
+        state->audio_packet_size = p_av_packet->size;
+
+        /* if update, update the audio clock w/pts */
+        if(p_av_packet->pts != AV_NOPTS_VALUE) {
+            state->audio_clock = av_q2d(state->audio_stream->time_base)*p_av_packet->pts;
+        }
     }
 }
 
@@ -112,6 +123,7 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
     VideoState *state = (VideoState *) p_audio_ctx;
     int unused_data_length;  //还没用使用的audio_buffer数据长度
     int decode_audio_size;    //解码过的音频数据长度.
+    double pts;
 
     SDL_memset(stream, 0, length);
 
@@ -120,7 +132,7 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
         //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
         if (state->audio_buffer_index >= state->audio_buffer_size){
             //继续解码音频数据
-            decode_audio_size = audio_decode_frame(state, state->audio_buffer, sizeof(state->audio_buffer));
+            decode_audio_size = audio_decode_frame(state, state->audio_buffer, sizeof(state->audio_buffer),&pts);
         }
     }
 }

@@ -25,7 +25,7 @@ static void schedule_refresh(VideoState *is, Uint32 delay) {
  * @param i  大小
  * @return
  */
-int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_size,double *pts_ptr) {
+int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_size, double *pts_ptr) {
 
     AVPacket *p_av_packet = &state->audio_packet;
 
@@ -84,7 +84,7 @@ int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_s
             *pts_ptr = pts;
 
             n = 2 * state->audio_ctx->channels;
-            state->audio_clock += data_size / (double)(n * state->audio_ctx->sample_rate);
+            state->audio_clock += data_size / (double) (n * state->audio_ctx->sample_rate);
             return data_size;
         }
 
@@ -106,8 +106,9 @@ int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_s
         state->audio_packet_size = p_av_packet->size;
 
         /* if update, update the audio clock w/pts */
-        if(p_av_packet->pts != AV_NOPTS_VALUE) {
-            state->audio_clock = av_q2d(state->audio_stream->time_base)*p_av_packet->pts;
+        if (p_av_packet->pts != AV_NOPTS_VALUE) {
+            //Convert an AVRational to a `double`.
+            state->audio_clock = av_q2d(state->audio_stream->time_base) * p_av_packet->pts;
         }
     }
 }
@@ -130,9 +131,9 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
     //如果大于0,则可以读音频数据
     while (length > 0) {
         //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
-        if (state->audio_buffer_index >= state->audio_buffer_size){
+        if (state->audio_buffer_index >= state->audio_buffer_size) {
             //继续解码音频数据
-            decode_audio_size = audio_decode_frame(state, state->audio_buffer, sizeof(state->audio_buffer),&pts);
+            decode_audio_size = audio_decode_frame(state, state->audio_buffer, sizeof(state->audio_buffer), &pts);
         }
     }
 }

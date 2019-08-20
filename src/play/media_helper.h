@@ -90,6 +90,9 @@ typedef struct VideoState {
     //for pts
     double audio_clock;
     double video_clock;    ///<pts of last decoded frame / predicted pts of next decoded frame
+    double frame_timer;
+    double frame_last_pts;
+    double frame_last_delay;
 
     int quit;                               //结束进程.
 

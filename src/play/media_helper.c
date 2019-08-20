@@ -42,7 +42,7 @@ void alloc_picture(void *userdata) {
         fprintf(stderr, "Could not allocate temporary picture: %s\n", av_err2str(ret));
     }
 
-    SDL_UnlockMutex(text_mutex);
+    SDL_UnlockMutex(p_texture_mutex);
 
     vp->width = is->video_ctx->width;
     vp->height = is->video_ctx->height;

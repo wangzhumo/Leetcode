@@ -2,6 +2,7 @@
 // Created by 王诛魔 on 2019/8/1.
 //
 
+#include <assert.h>
 #include "media_player.h"
 
 static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque) {
@@ -18,13 +19,110 @@ static void schedule_refresh(VideoState *is, Uint32 delay) {
 }
 
 /**
+ * 封装解码音频数据
+ * @param pContext 上下文
+ * @param buffer  容器
+ * @param i  大小
+ * @return
+ */
+int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_size) {
+
+    AVPacket *p_av_packet = &state->audio_packet;
+
+    static uint8_t *audio_package_data = NULL;
+
+    int decode_length;   //解码的长度
+    int data_size;
+    double pts;
+
+
+    //这样,while第一次不会被执行到
+    //取到数据则可以for循环,开始while解码数据,取不到数据就 quit
+    for (;;) {
+        //只要队列里不为空,就一直解码
+        while (state->audio_packet_size > 0) {
+            int got_frame = 0;
+            /*
+             * @param      avctx the codec context
+             * @param[out] frame The AVFrame in which to store decoded audio samples
+             * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is non-zero.
+             * @param[in]  avpkt The input AVPacket containing the input buffer.
+             * @return number of bytes consumed from the input AVPacket
+             */
+            decode_length = avcodec_decode_audio4(state->audio_ctx, &state->audio_frame, &got_frame, p_av_packet);
+            if (decode_length < 0) {
+                state->audio_packet_size = 0;
+                break;
+            }
+
+            data_size = 0;
+            if (got_frame) {
+                //解码成功的数据.
+                data_size = 2 * 2 * state->audio_frame.nb_samples;
+                assert(data_size <= buffer_size);
+                //convert audio buffer 为标准输入的数据.
+                swr_convert(state->audio_swr_ctx,
+                            &audio_buffer,
+                            MAX_AUDIO_FRAME_SIZE * 3 / 2,
+                            (const uint8_t **) state->audio_frame.data,
+                            state->audio_frame.nb_samples
+                );
+                //fwrite(audio_buffer, 1, data_size, audiofd);
+            }
+
+            state->audio_packet_size -= decode_length;   //剩余大小
+            state->audio_packet_data += decode_length;   //加上解码后的长度,指针到了没有使用过的数据位置
+
+
+            if (data_size <= 0) {
+                continue;
+            }
+
+            //此时.
+            pts = state->audio_packet_data
+        }
+
+        if (av_packet.data) {
+            av_free_packet(&av_packet);
+        }
+        if (global_video_state.quit) {
+            return -1;
+        }
+
+        //继续取数据
+        if (select_packet_queue(&p_audio_queue, &av_packet, 1) < 0) {
+            //取不到数据,则退出
+            return -1;
+        }
+
+        //赋值
+        audio_package_data = av_packet.data;
+        audio_package_size = av_packet.size;
+    }
+}
+
+
+/**
  * 播放设备的回调,调取数据
  * @param p_audio_ctx  AVCodecContext
  * @param stream 音频设备的buffer
  * @param length buffer可用的大小
  */
 void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
+    VideoState *state = (VideoState *) p_audio_ctx;
+    int unused_data_length;  //还没用使用的audio_buffer数据长度
+    int decode_audio_size;    //解码过的音频数据长度.
 
+    SDL_memset(stream, 0, length);
+
+    //如果大于0,则可以读音频数据
+    while (length > 0) {
+        //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
+        if (state->audio_buffer_index >= state->audio_buffer_size){
+            //继续解码音频数据
+            decode_audio_size = audio_decode_frame(state, state->audio_buffer, sizeof(state->audio_buffer));
+        }
+    }
 }
 
 /**

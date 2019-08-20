@@ -87,6 +87,10 @@ typedef struct VideoState {
     SDL_Thread *parse_demux_tid;            //解复用线程
     SDL_Thread *video_decode_tid;           //视频解码线程
 
+    //for pts
+    double audio_clock;
+    double video_clock;    ///<pts of last decoded frame / predicted pts of next decoded frame
+
     int quit;                               //结束进程.
 
 } VideoState;

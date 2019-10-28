@@ -459,8 +459,7 @@ int play(char *path) {
     }
 
 
-    __FAIL:
-    //quit
+__FAIL:
     SDL_Event event1;
     event1.type = FF_QUIT_EVENT;
     event1.user.data1 = state;

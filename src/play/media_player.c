@@ -120,7 +120,7 @@ int audio_decode_frame(VideoState *state, uint8_t *audio_buffer, size_t buffer_s
  * @param stream 音频设备的buffer
  * @param length buffer可用的大小
  */
-void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
+void audio_callback_func(void *p_audio_ctx, Uint8 *stream, int length) {
     VideoState *state = (VideoState *) p_audio_ctx;
     int unused_data_length;  //还没用使用的audio_buffer数据长度
     int decode_audio_size;    //解码过的音频数据长度.
@@ -224,7 +224,7 @@ int stream_component_open(VideoState *state, int stream_index) {
 
     if (p_codec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         //open audio devices
-        open_audio_devices(p_codec_ctx, &wanted_spec, &spec, state, audio_callback);
+        open_audio_devices(p_codec_ctx, &wanted_spec, &spec, state, audio_callback_func);
         //set video_state
         state->audioIndex = stream_index;
         state->audio_ctx = p_codec_ctx;

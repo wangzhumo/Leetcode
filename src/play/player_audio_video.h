@@ -5,8 +5,8 @@
 #define MEDIA_PLAYER_AUDIO_VIDEO_H
 
 #include <stdio.h>
-#include <assert.h>
 #include "media_helper.h"
+#include <assert.h>
 
 #endif //MEDIA_PLAYER_AUDIO_VIDEO_H
 

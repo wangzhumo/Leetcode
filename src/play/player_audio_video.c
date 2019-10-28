@@ -16,7 +16,7 @@ static PacketQueue p_audio_queue;
  * @param i  大小
  * @return
  */
-int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_t buffer_size) {
+int player_audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_t buffer_size) {
 
     static AVPacket av_packet;
     static uint8_t *audio_package_data = NULL;
@@ -91,7 +91,7 @@ int audio_decode_frame(AVCodecContext *p_codec_ctx, uint8_t *audio_buffer, size_
  * @param stream 音频设备的buffer
  * @param length buffer可用的大小
  */
-void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
+void player_audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
     AVCodecContext *p_audio_codec_ctx = (AVCodecContext *) p_audio_ctx;
     int unused_data_length;  //还没用使用的audio_buffer数据长度
     int decode_audio_size;    //解码过的音频数据长度.
@@ -106,7 +106,7 @@ void audio_callback(void *p_audio_ctx, Uint8 *stream, int length) {
     while (length > 0) {
         //audio_buffer_index >= audio_buffer_size  说明已经读取完所有的buffer数据了
         if (audio_buffer_index >= audio_buffer_size) {
-            decode_audio_size = audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
+            decode_audio_size = player_audio_decode_frame(p_audio_codec_ctx, audio_buffer, sizeof(audio_buffer));
             //如果解码成功.
             if (decode_audio_size >= 0) {
                 audio_buffer_size = decode_audio_size;
@@ -251,7 +251,7 @@ int play_audio_video(char *video_path) {
     dts_spec.format = AUDIO_S16SYS;
     dts_spec.silence = 0;
     dts_spec.samples = SDL_AUDIO_BUFFER_SIZE;
-    dts_spec.callback = audio_callback;
+    dts_spec.callback = player_audio_callback;
     dts_spec.userdata = p_audio_codec_ctx;
 
     //open audio device
